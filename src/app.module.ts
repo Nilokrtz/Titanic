@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { AuthModule } from './auth/auth.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
 import { PerfisModule } from './perfis/perfis.module.js';
 import { ClassesModule } from './classes/classes.module.js';
@@ -14,7 +15,7 @@ import { QuizQuestoesModule } from './quiz_questoes/quiz_questoes.module.js';
 import { TentativasSalaModule } from './tentativas_sala/tentativas_sala.module.js';
 
 @Module({
-  imports: [UsuariosModule, PerfisModule, ClassesModule, RanksModule, PersonagensModule, AtributosModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule],
+  imports: [AuthModule, UsuariosModule, PerfisModule, ClassesModule, RanksModule, PersonagensModule, AtributosModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule],
   controllers: [AppController],
   providers: [AppService],
 })
