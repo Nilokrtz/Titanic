@@ -1,12 +1,22 @@
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  ValidationPipe,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
+import { LoginDto } from './dto/login.dto.js';
+import { LoginRespostaDto } from './dto/login-resposta.dto.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
 import { RegistrarRespostaDto } from './dto/registrar-resposta.dto.js';
 
@@ -27,5 +37,18 @@ export class AuthController {
     registro: RegistrarDto,
   ): Promise<RegistrarRespostaDto> {
     return this.authService.registrar(registro);
+  }
+
+  @Post('login')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Entra com email e senha' })
+  @ApiOkResponse({ type: LoginRespostaDto })
+  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Email ou senha inválidos.' })
+  login(
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+    credenciais: LoginDto,
+  ): Promise<LoginRespostaDto> {
+    return this.authService.login(credenciais);
   }
 }
