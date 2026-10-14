@@ -11,6 +11,7 @@ import { RegistrarDto } from './dto/registrar.dto.js';
 import { RegistrarRespostaDto } from './dto/registrar-resposta.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { LoginRespostaDto } from './dto/login-resposta.dto.js';
+import { MeRespostaDto } from './dto/me-resposta.dto.js';
 import { SenhasService } from './senhas.service.js';
 
 @Injectable()
@@ -78,6 +79,27 @@ export class AuthService {
       access_token: await this.jwtService.signAsync({ sub: usuario.id }),
       token_type: 'Bearer',
       expires_in: 900,
+    };
+  }
+
+  async me(usuarioId: number): Promise<MeRespostaDto> {
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { id: usuarioId },
+      select: {
+        id: true,
+        email: true,
+        perfis: { select: { nome: true } },
+      },
+    });
+
+    if (!usuario) {
+      throw new UnauthorizedException('Sessão inválida.');
+    }
+
+    return {
+      id: usuario.id,
+      email: usuario.email,
+      perfil: usuario.perfis?.nome ?? null,
     };
   }
 }

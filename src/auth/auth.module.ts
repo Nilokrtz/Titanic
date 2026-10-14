@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from '../prisma/prisma.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { AutenticacaoGuard } from './guards/autenticacao.guard.js';
 import { SenhasService } from './senhas.service.js';
 
 @Module({
@@ -17,11 +18,16 @@ import { SenhasService } from './senhas.service.js';
           throw new Error('JWT_SECRET não configurada.');
         }
 
-        return { secret: segredo, signOptions: { expiresIn: '15m' } };
+        return {
+          secret: segredo,
+          signOptions: { expiresIn: '15m', algorithm: 'HS256' },
+          verifyOptions: { algorithms: ['HS256'] },
+        };
       },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, SenhasService],
+  providers: [AuthService, SenhasService, AutenticacaoGuard],
+  exports: [AutenticacaoGuard],
 })
 export class AuthModule {}

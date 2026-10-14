@@ -1,12 +1,16 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Post,
+  Req,
+  UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
@@ -14,11 +18,14 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { LoginRespostaDto } from './dto/login-resposta.dto.js';
+import { MeRespostaDto } from './dto/me-resposta.dto.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
 import { RegistrarRespostaDto } from './dto/registrar-resposta.dto.js';
+import { AutenticacaoGuard } from './guards/autenticacao.guard.js';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -50,5 +57,19 @@ export class AuthController {
     credenciais: LoginDto,
   ): Promise<LoginRespostaDto> {
     return this.authService.login(credenciais);
+  }
+
+  @Get('me')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Consulta o usuário autenticado' })
+  @ApiOkResponse({ type: MeRespostaDto })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido ou expirado.',
+  })
+  me(
+    @Req() requisicao: Request & { usuarioId: number },
+  ): Promise<MeRespostaDto> {
+    return this.authService.me(requisicao.usuarioId);
   }
 }
