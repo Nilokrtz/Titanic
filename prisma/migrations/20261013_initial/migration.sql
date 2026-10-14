@@ -151,6 +151,7 @@ CREATE TABLE "usuarios" (
     "id" SERIAL NOT NULL,
     "email" VARCHAR(150) NOT NULL,
     "senha" VARCHAR(255) NOT NULL,
+    "refresh_token_hash" VARCHAR(255),
     "perfil_id" INTEGER,
     "criado_em" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
