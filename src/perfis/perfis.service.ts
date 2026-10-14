@@ -29,16 +29,14 @@ export class PerfisService {
       };
     }
 
-    const [perfis, total] = await this.prisma.$transaction([
-      this.prisma.perfis.findMany({
-        where: condicoes,
-        select: { id: true, nome: true, descricao: true },
-        orderBy: { id: 'asc' },
-        skip: (filtros.page - 1) * filtros.limit,
-        take: filtros.limit,
-      }),
-      this.prisma.perfis.count({ where: condicoes }),
-    ]);
+    const total = await this.prisma.perfis.count({ where: condicoes });
+    const perfis = await this.prisma.perfis.findMany({
+      where: condicoes,
+      select: { id: true, nome: true, descricao: true },
+      orderBy: { id: 'asc' },
+      skip: (filtros.page - 1) * filtros.limit,
+      take: filtros.limit,
+    });
 
     return {
       items: perfis,
