@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePerfiDto } from './dto/create-perfi.dto.js';
+import { ListarPerfisDto } from './dto/listar-perfis.dto.js';
+import { ListarPerfisRespostaDto } from './dto/listar-perfis-resposta.dto.js';
 import { PerfilRespostaDto } from './dto/perfil-resposta.dto.js';
 import { UpdatePerfiDto } from './dto/update-perfi.dto.js';
 
@@ -12,8 +15,37 @@ export class PerfisService {
     return 'This action adds a new perfi';
   }
 
-  findAll() {
-    return `This action returns all perfis`;
+  async findAll(filtros: ListarPerfisDto): Promise<ListarPerfisRespostaDto> {
+    const condicoes: Prisma.perfisWhereInput = {};
+
+    if (filtros.nome) {
+      condicoes.nome = filtros.nome;
+    }
+
+    if (filtros.descricao) {
+      condicoes.descricao = {
+        contains: filtros.descricao,
+        mode: 'insensitive',
+      };
+    }
+
+    const [perfis, total] = await this.prisma.$transaction([
+      this.prisma.perfis.findMany({
+        where: condicoes,
+        select: { id: true, nome: true, descricao: true },
+        orderBy: { id: 'asc' },
+        skip: (filtros.page - 1) * filtros.limit,
+        take: filtros.limit,
+      }),
+      this.prisma.perfis.count({ where: condicoes }),
+    ]);
+
+    return {
+      items: perfis,
+      page: filtros.page,
+      limit: filtros.limit,
+      total,
+    };
   }
 
   async findOne(id: number): Promise<PerfilRespostaDto> {

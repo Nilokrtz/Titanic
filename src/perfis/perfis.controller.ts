@@ -7,7 +7,9 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  Query,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -22,6 +24,8 @@ import {
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { PerfisService } from './perfis.service.js';
 import { CreatePerfiDto } from './dto/create-perfi.dto.js';
+import { ListarPerfisDto } from './dto/listar-perfis.dto.js';
+import { ListarPerfisRespostaDto } from './dto/listar-perfis-resposta.dto.js';
 import { PerfilRespostaDto } from './dto/perfil-resposta.dto.js';
 import { UpdatePerfiDto } from './dto/update-perfi.dto.js';
 
@@ -36,8 +40,23 @@ export class PerfisController {
   }
 
   @Get()
-  findAll() {
-    return this.perfisService.findAll();
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lista perfis com paginação e filtros' })
+  @ApiOkResponse({ type: ListarPerfisRespostaDto })
+  @ApiBadRequestResponse({ description: 'Filtros ou paginação inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  findAll(
+    @Query(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    )
+    filtros: ListarPerfisDto,
+  ): Promise<ListarPerfisRespostaDto> {
+    return this.perfisService.findAll(filtros);
   }
 
   @Get(':id')
