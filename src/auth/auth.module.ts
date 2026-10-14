@@ -35,6 +35,6 @@ import { SenhasService } from './senhas.service.js';
   ],
   controllers: [AuthController],
   providers: [AuthService, SenhasService, AutenticacaoGuard],
-  exports: [AutenticacaoGuard],
+  exports: [AutenticacaoGuard, JwtModule],
 })
 export class AuthModule {}
