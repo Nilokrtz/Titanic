@@ -13,9 +13,16 @@ import { SenhasService } from './senhas.service.js';
     JwtModule.registerAsync({
       useFactory: () => {
         const segredo = process.env.JWT_SECRET;
+        const segredoRefresh = process.env.JWT_REFRESH_SECRET;
 
         if (!segredo) {
           throw new Error('JWT_SECRET não configurada.');
+        }
+
+        if (!segredoRefresh || segredoRefresh === segredo) {
+          throw new Error(
+            'JWT_REFRESH_SECRET deve ser configurada com outra chave.',
+          );
         }
 
         return {

@@ -23,6 +23,7 @@ import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { LoginRespostaDto } from './dto/login-resposta.dto.js';
 import { MeRespostaDto } from './dto/me-resposta.dto.js';
+import { RefreshDto } from './dto/refresh.dto.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
 import { RegistrarRespostaDto } from './dto/registrar-resposta.dto.js';
 import { AutenticacaoGuard } from './guards/autenticacao.guard.js';
@@ -57,6 +58,21 @@ export class AuthController {
     credenciais: LoginDto,
   ): Promise<LoginRespostaDto> {
     return this.authService.login(credenciais);
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Troca um refresh token por novos tokens' })
+  @ApiOkResponse({ type: LoginRespostaDto })
+  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiUnauthorizedResponse({
+    description: 'Refresh token inválido ou expirado.',
+  })
+  refresh(
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+    solicitacao: RefreshDto,
+  ): Promise<LoginRespostaDto> {
+    return this.authService.refresh(solicitacao);
   }
 
   @Get('me')
