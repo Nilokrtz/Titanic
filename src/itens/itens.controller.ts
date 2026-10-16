@@ -56,8 +56,20 @@ export class ItensController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateItenDto: UpdateItenDto) {
-    return this.itensService.update(+id, updateItenDto);
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Atualiza dados de um item' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ type: ItemRespostaDto })
+  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiNotFoundResponse({ description: 'Item não encontrado.' })
+  update
+  (@Param('id', ParseIntPipe) id: number, 
+   @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true,        
+  transform: true }))
+   updateItenDto: UpdateItenDto,
+  ) {
+    return this.itensService.update(id, updateItenDto);
   }
 
   @Delete(':id')
