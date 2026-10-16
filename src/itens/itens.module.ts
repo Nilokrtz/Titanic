@@ -6,7 +6,7 @@ import { ItensController } from './itens.controller.js';
 
 
 @Module({
-  imports: [PrismaModule], 
+  imports: [ AuthModule, PrismaModule], 
   controllers: [ItensController],
   providers: [ItensService],
 })

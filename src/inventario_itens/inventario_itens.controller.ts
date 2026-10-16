@@ -1,34 +1,67 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  ParseIntPipe,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  ValidationPipe,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
+import { FindInventarioQueryDto } from './dto/find-inventario-query.dto.js';
 import { InventarioItensService } from './inventario_itens.service.js';
-import { CreateInventarioItenDto } from './dto/create-inventario_iten.dto.js';
-import { UpdateInventarioItenDto } from './dto/update-inventario_iten.dto.js';
 
-@Controller('inventario-itens')
+@ApiTags('Inventário')
+@Controller('personagens/:personagemId/inventario')
 export class InventarioItensController {
-  constructor(private readonly inventarioItensService: InventarioItensService) {}
-
-  @Post()
-  create(@Body() createInventarioItenDto: CreateInventarioItenDto) {
-    return this.inventarioItensService.create(createInventarioItenDto);
-  }
+  constructor(
+    private readonly inventarioItensService: InventarioItensService,
+  ) {}
 
   @Get()
-  findAll() {
-    return this.inventarioItensService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.inventarioItensService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateInventarioItenDto: UpdateInventarioItenDto) {
-    return this.inventarioItensService.update(+id, updateInventarioItenDto);
+  @ApiOperation({
+    summary: 'Lista os itens da mochila do personagem com paginação e filtros',
+  })
+  @ApiParam({ name: 'personagemId', type: Number })
+  listarMochila(
+    @Param('personagemId', ParseIntPipe) personagemId: number,
+    @Query(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    )
+    filtros: FindInventarioQueryDto,
+  ) {
+    return this.inventarioItensService.listarMochila(personagemId, filtros);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.inventarioItensService.remove(+id);
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Descarta voluntariamente uma unidade de item da mochila',
+  })
+  @ApiParam({ name: 'personagemId', type: Number })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ description: 'Item descartado com sucesso.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiNotFoundResponse({ description: 'Item não encontrado no inventário.' })
+  descartarItem(
+    @Param('personagemId', ParseIntPipe) personagemId: number,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.inventarioItensService.descartarItem(personagemId, id);
   }
 }
