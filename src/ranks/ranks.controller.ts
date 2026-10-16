@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe } from '@nestjs/common';
 import { RanksService } from './ranks.service.js';
 import { CreateRankDto } from './dto/create-rank.dto.js';
 import { UpdateRankDto } from './dto/update-rank.dto.js';
 import { FindRanksQueryDto } from './dto/find-ranks-query.dto.js';
-import { ApiTags, ApiOperation, ApiResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBadRequestResponse, ApiNotFoundResponse } from '@nestjs/swagger';
 
 @ApiTags('Ranks')
 @Controller('ranks')
@@ -24,8 +24,12 @@ export class RanksController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ranksService.findOne(+id);
+  @ApiOperation({ summary: 'Obter um rank pelo ID' })
+  @ApiResponse({ status: 200, description: 'Rank retornado com sucesso.' })
+  @ApiBadRequestResponse({ description: 'O ID informado deve ser um número inteiro.' })
+  @ApiNotFoundResponse({ description: 'Rank não encontrado para o ID informado.' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.ranksService.findOne(id);
   }
 
   @Patch(':id')

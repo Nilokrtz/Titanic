@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRankDto } from './dto/create-rank.dto.js';
 import { UpdateRankDto } from './dto/update-rank.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -47,8 +47,16 @@ export class RanksService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} rank`;
+  async findOne(id: number) {
+    const rank = await this.prisma.ranks.findUnique({
+      where: { id },
+    });
+
+    if (!rank) {
+      throw new NotFoundException(`Rank com o ID ${id} não foi encontrado.`);
+    }
+
+    return rank;
   }
 
   update(id: number, updateRankDto: UpdateRankDto) {
