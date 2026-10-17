@@ -8,19 +8,32 @@ import { PrismaService } from '../prisma/prisma.service.js';
 
 @Injectable()
 export class ItensService {
-   constructor(private readonly prisma: PrismaService) {}
+   private readonly cacheLoja = new Map<
+   string, 
+   { expiraEm: number ; dados: unknown}
+  >();
+private readonly TTL_MS =  60 * 1000; 
 
-  
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(createItenDto: CreateItenDto) {
+
+  async create(createItenDto: CreateItenDto) {
+    const novoItem = await this.prisma.itens.create({
     return this.prisma.itens.create({
       data: createItenDto,
     });
+    return novoItem;
   }
 
   
   async findAll(filtros?: FindItensQueryDto) {
-   const condicoes: Prisma.itensWhereInput = {};
+   const chaveCache = JSON.stringify(filtros ?? {});
+   const itemEmCache = this.cacheLoja.get(chaveCache);
+   if (itemEmCache && itemEmCache.expiraEm > Date.now()) {
+     return itemEmCache.dados;
+   }
+
+    const condicoes: Prisma.itensWhereInput = {};
     if (filtros?.tipo_efeito) {
       condicoes.tipo_efeito = {
       contains: filtros.tipo_efeito,
@@ -43,7 +56,13 @@ export class ItensService {
       skip: (page - 1) * limit,
       take: limit,
     });
-    return { items, page, limit, total};
+
+    const resultado = { items, page, limit, total };
+    this.cacheLoja.set(chaveCache, {
+      expiraEm: Date.now() + this.TTL_MS,
+      dados: resultado,
+    });
+    return resultado;
   }
 
   async findOne(id: number) {
@@ -53,7 +72,7 @@ export class ItensService {
     });
 
     if (!item) {
-      throw new NotFoundException('Item não encontrado.');
+      throw new NotFoundException('Item nao encontrado.');
     }
 
     return item;
@@ -62,15 +81,24 @@ export class ItensService {
   async update(id: number, updateItenDto: UpdateItenDto) {
     await this.findOne(id);
 
-    return this.prisma.itens.update({
+    const atualizazdo = await this.prisma.itens.update({
       where: { id },
       data: updateItenDto,
     });
-  }
+    this.cacheLoja.clear();
+    return atualizazdo;
+ 
 
 
   async remove(id: number) {
-    await this.findOne(id);
+    const item = await this.findOne(id);
+
+    if(item.tipo_efeito === 'EASTER_EGG') {
+      throw new BadRequestException(
+        'Nao e possível excluir um item lendario (Easter Egg) do catalogo.',
+      );
+    }
+
     const quantidadeEmMochilas = await this.prisma.inventario_itens.count({
       where: { item_id: id },
     });
@@ -83,6 +111,7 @@ export class ItensService {
     await this.prisma.itens.delete({
       where: { id },
     });
+    this.cacheLoja.clear();
     return { mensagem: 'Item removido com sucesso.' };
   }
 }
