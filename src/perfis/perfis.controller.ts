@@ -9,7 +9,6 @@ import {
   ParseIntPipe,
   Query,
   UseGuards,
-  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -47,14 +46,7 @@ export class PerfisController {
   @ApiBadRequestResponse({ description: 'Filtros ou paginação inválidos.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findAll(
-    @Query(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: true,
-      }),
-    )
-    filtros: ListarPerfisDto,
+    @Query() filtros: ListarPerfisDto,
   ): Promise<ListarPerfisRespostaDto> {
     return this.perfisService.findAll(filtros);
   }

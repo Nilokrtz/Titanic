@@ -1,8 +1,11 @@
 import {
+  ConflictException,
   ForbiddenException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { SenhasService } from '../auth/senhas.service.js';
+import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UsuariosService } from './usuarios.service.js';
 
@@ -10,19 +13,84 @@ describe('UsuariosService', () => {
   const buscarUsuario = vi.fn();
   const contarUsuarios = vi.fn();
   const listarUsuarios = vi.fn();
+  const buscarPerfil = vi.fn();
+  const criarUsuario = vi.fn();
+  const gerarHash = vi.fn();
   const prisma = {
+    perfis: { findUnique: buscarPerfil },
     usuarios: {
       findUnique: buscarUsuario,
       count: contarUsuarios,
       findMany: listarUsuarios,
+      create: criarUsuario,
     },
   } as unknown as PrismaService;
-  const service = new UsuariosService(prisma);
+  const senhasService = { gerarHash } as unknown as SenhasService;
+  const service = new UsuariosService(prisma, senhasService);
 
   beforeEach(() => {
     buscarUsuario.mockReset();
     contarUsuarios.mockReset();
     listarUsuarios.mockReset();
+    buscarPerfil.mockReset();
+    criarUsuario.mockReset();
+    gerarHash.mockReset();
+  });
+
+  it('cadastra usuário com senha em hash e retorna apenas dados públicos', async () => {
+    buscarPerfil.mockResolvedValueOnce({ id: 3 });
+    gerarHash.mockResolvedValueOnce('hash-da-senha');
+    criarUsuario.mockResolvedValueOnce({
+      id: 5,
+      email: 'aluno@exemplo.com',
+      perfis: { nome: 'ALUNO' },
+    });
+
+    await expect(
+      service.create({
+        email: ' Aluno@Exemplo.com ',
+        senha: 'senha-segura',
+        perfil_id: 3,
+      }),
+    ).resolves.toEqual({
+      id: 5,
+      email: 'aluno@exemplo.com',
+      perfil: 'ALUNO',
+    });
+    expect(gerarHash).toHaveBeenCalledWith('senha-segura');
+    expect(criarUsuario).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          email: 'aluno@exemplo.com',
+          senha: 'hash-da-senha',
+          perfis: { connect: { id: 3 } },
+        },
+      }),
+    );
+  });
+
+  it('rejeita perfil inexistente', async () => {
+    buscarPerfil.mockResolvedValueOnce(null);
+
+    await expect(
+      service.create({ email: 'aluno@exemplo.com', senha: 'senha', perfil_id: 99 }),
+    ).rejects.toThrow(NotFoundException);
+    expect(criarUsuario).not.toHaveBeenCalled();
+  });
+
+  it('informa conflito quando o email já existe', async () => {
+    buscarPerfil.mockResolvedValueOnce({ id: 3 });
+    gerarHash.mockResolvedValueOnce('hash-da-senha');
+    criarUsuario.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Email duplicado', {
+        code: 'P2002',
+        clientVersion: '7.10.0',
+      }),
+    );
+
+    await expect(
+      service.create({ email: 'aluno@exemplo.com', senha: 'senha', perfil_id: 3 }),
+    ).rejects.toThrow(ConflictException);
   });
 
   it('lista usuários para o professor com filtros e paginação', async () => {

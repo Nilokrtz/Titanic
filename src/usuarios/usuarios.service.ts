@@ -1,10 +1,12 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { Prisma } from '../generated/prisma/client.js';
+import { Prisma } from '../generated/prisma/client.js';
+import { SenhasService } from '../auth/senhas.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
 import { ListarUsuariosDto } from './dto/listar-usuarios.dto.js';
@@ -14,10 +16,53 @@ import { UsuarioRespostaDto } from './dto/usuario-resposta.dto.js';
 
 @Injectable()
 export class UsuariosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly senhasService: SenhasService,
+  ) {}
 
-  create(createUsuarioDto: CreateUsuarioDto) {
-    return 'This action adds a new usuario';
+  async create(createUsuarioDto: CreateUsuarioDto): Promise<UsuarioRespostaDto> {
+    const perfil = await this.prisma.perfis.findUnique({
+      where: { id: createUsuarioDto.perfil_id },
+      select: { id: true },
+    });
+
+    if (!perfil) {
+      throw new NotFoundException('Perfil não encontrado.');
+    }
+
+    const email = createUsuarioDto.email.trim().toLowerCase();
+    const hashSenha = await this.senhasService.gerarHash(createUsuarioDto.senha);
+
+    try {
+      const usuario = await this.prisma.usuarios.create({
+        data: {
+          email,
+          senha: hashSenha,
+          perfis: { connect: { id: perfil.id } },
+        },
+        select: {
+          id: true,
+          email: true,
+          perfis: { select: { nome: true } },
+        },
+      });
+
+      return {
+        id: usuario.id,
+        email: usuario.email,
+        perfil: usuario.perfis?.nome ?? null,
+      };
+    } catch (erro) {
+      if (
+        erro instanceof Prisma.PrismaClientKnownRequestError &&
+        erro.code === 'P2002'
+      ) {
+        throw new ConflictException('Email já cadastrado.');
+      }
+
+      throw erro;
+    }
   }
 
   async findAll(
