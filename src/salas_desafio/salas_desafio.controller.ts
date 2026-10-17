@@ -1,4 +1,4 @@
-import {Controller,Post,Get,Put,Body,UseGuards, Param, ParseIntPipe} from '@nestjs/common';
+import {Controller,Post,Get,Put,Delete,Body,UseGuards, Param, ParseIntPipe} from '@nestjs/common';
 import { ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse,ApiOkResponse, ApiParam, ApiNotFoundResponse} from '@nestjs/swagger';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
@@ -62,5 +62,19 @@ export class SalasDesafioController {
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
   update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateSalasDesafioDto) {
     return this.salasDesafioService.update(id, updateDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Remove uma sala de desafio' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da sala de desafio' })
+  @ApiOkResponse({ description: 'Sala de desafio removida com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Sala de desafio não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.salasDesafioService.remove(id);
   }
 }

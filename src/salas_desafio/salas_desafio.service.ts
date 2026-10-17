@@ -24,7 +24,7 @@ export class SalasDesafioService {
   }
 
   async findAll(){
-    return await SalasDesafioRepository.listarTodasAsSalas(); 
+    return await this.repository.listarTodasAsSalas(); 
   }
 
   async findById(id: Number){
@@ -54,5 +54,16 @@ export class SalasDesafioService {
     }
 
     return this.repository.atualizarSala(id, updateDto);
+  }
+
+  async remove(id: number) {
+    const sala = await this.repository.buscarSalaPorId(id);
+
+    if(!sala){
+      throw new NotFoundException('Sala de desafio não encontrada')
+    }
+
+    await this.repository.remover(id);
+    return { mensagem: 'Sala de desafio removida com sucesso.' };
   }
 }

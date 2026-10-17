@@ -47,4 +47,9 @@ export class SalasDesafioRepository {
       include:{ranks: true}
     });
   }
+  async remover(id: Number){
+    return this.prisma.salas_desafio.delete({
+      where:{id}
+    });
+  }
 }
