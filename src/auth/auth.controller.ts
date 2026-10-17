@@ -13,6 +13,7 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -73,6 +74,17 @@ export class AuthController {
     solicitacao: RefreshDto,
   ): Promise<LoginRespostaDto> {
     return this.authService.refresh(solicitacao);
+  }
+
+  @Post('logout')
+  @HttpCode(204)
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Invalida o refresh token do usuário autenticado' })
+  @ApiNoContentResponse({ description: 'Refresh token invalidado.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  logout(@Req() requisicao: Request & { usuarioId: number }): Promise<void> {
+    return this.authService.logout(requisicao.usuarioId);
   }
 
   @Get('me')

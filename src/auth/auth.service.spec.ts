@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuthService } from './auth.service.js';
 import { SenhasService } from './senhas.service.js';
 
-describe('AuthService com usuário excluído', () => {
+describe('AuthService', () => {
   const buscarUsuario = vi.fn();
   const atualizarUsuarios = vi.fn();
   const conferirSenha = vi.fn();
@@ -69,5 +69,21 @@ describe('AuthService com usuário excluído', () => {
         process.env.JWT_REFRESH_SECRET = segredoAnterior;
       }
     }
+  });
+
+  it('invalida o refresh token ao sair', async () => {
+    atualizarUsuarios.mockResolvedValueOnce({ count: 1 });
+
+    await expect(service.logout(2)).resolves.toBeUndefined();
+    expect(atualizarUsuarios).toHaveBeenCalledWith({
+      where: { id: 2, excluido_em: null },
+      data: { refresh_token_hash: null },
+    });
+  });
+
+  it('recusa logout quando o usuário não está mais ativo', async () => {
+    atualizarUsuarios.mockResolvedValueOnce({ count: 0 });
+
+    await expect(service.logout(2)).rejects.toThrow(UnauthorizedException);
   });
 });

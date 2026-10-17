@@ -126,6 +126,17 @@ export class AuthService {
     return novosTokens;
   }
 
+  async logout(usuarioId: number): Promise<void> {
+    const atualizacao = await this.prisma.usuarios.updateMany({
+      where: { id: usuarioId, excluido_em: null },
+      data: { refresh_token_hash: null },
+    });
+
+    if (atualizacao.count !== 1) {
+      throw new UnauthorizedException('Sessão inválida.');
+    }
+  }
+
   async me(usuarioId: number): Promise<MeRespostaDto> {
     const usuario = await this.prisma.usuarios.findUnique({
       where: { id: usuarioId },
