@@ -33,21 +33,21 @@ export class SalasDesafioRepository {
     });
   }
 
-  async buscarSalaPorId(id: Number){
+  async buscarSalaPorId(id: number){
     return this.prisma.salas_desafio.findUnique({
       where:{id},
       include:{ranks: true}
     });
   }
 
-  async atualizarSala(id: Number, data: UpdateSalasDesafioDto){
+  async atualizarSala(id: number, data: UpdateSalasDesafioDto){
     return this.prisma.salas_desafio.update({
       where: {id},
       data,
       include:{ranks: true}
     });
   }
-  async remover(id: Number){
+  async remover(id: number){
     return this.prisma.salas_desafio.delete({
       where:{id}
     });

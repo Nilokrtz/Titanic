@@ -27,7 +27,7 @@ export class SalasDesafioService {
     return await this.repository.listarTodasAsSalas(); 
   }
 
-  async findById(id: Number){
+  async findById(id: number){
     const sala = await this.repository.buscarSalaPorId(id);
     if(!sala){
       throw new NotFoundException('Sala de desafio não encontrada')

@@ -19,7 +19,6 @@ private readonly TTL_MS =  60 * 1000;
 
   async create(createItenDto: CreateItenDto) {
     const novoItem = await this.prisma.itens.create({
-    return this.prisma.itens.create({
       data: createItenDto,
     });
     return novoItem;
@@ -87,7 +86,7 @@ private readonly TTL_MS =  60 * 1000;
     });
     this.cacheLoja.clear();
     return atualizazdo;
- 
+  }
 
 
   async remove(id: number) {
