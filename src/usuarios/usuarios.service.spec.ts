@@ -16,6 +16,7 @@ describe('UsuariosService', () => {
   const buscarPerfil = vi.fn();
   const criarUsuario = vi.fn();
   const atualizarUsuario = vi.fn();
+  const excluirUsuario = vi.fn();
   const gerarHash = vi.fn();
   const prisma = {
     perfis: { findUnique: buscarPerfil },
@@ -25,6 +26,7 @@ describe('UsuariosService', () => {
       findMany: listarUsuarios,
       create: criarUsuario,
       update: atualizarUsuario,
+      updateMany: excluirUsuario,
     },
   } as unknown as PrismaService;
   const senhasService = { gerarHash } as unknown as SenhasService;
@@ -37,6 +39,7 @@ describe('UsuariosService', () => {
     buscarPerfil.mockReset();
     criarUsuario.mockReset();
     atualizarUsuario.mockReset();
+    excluirUsuario.mockReset();
     gerarHash.mockReset();
   });
 
@@ -221,6 +224,7 @@ describe('UsuariosService', () => {
     });
     expect(contarUsuarios).toHaveBeenCalledWith({
       where: {
+        excluido_em: null,
         perfil_id: 3,
         email: { contains: 'aluno', mode: 'insensitive' },
       },
@@ -298,5 +302,36 @@ describe('UsuariosService', () => {
       .mockResolvedValueOnce(null);
 
     await expect(service.findOne(2, 1)).rejects.toThrow(NotFoundException);
+  });
+
+  it('não mostra usuário excluído na consulta individual', async () => {
+    buscarUsuario
+      .mockResolvedValueOnce({ id: 1, perfis: { nome: 'ADMIN_PROFESSOR' } })
+      .mockResolvedValueOnce({
+        id: 2,
+        email: 'aluno@exemplo.com',
+        excluido_em: new Date(),
+      });
+
+    await expect(service.findOne(2, 1)).rejects.toThrow(NotFoundException);
+  });
+
+  it('exclui logicamente e invalida o refresh token', async () => {
+    excluirUsuario.mockResolvedValueOnce({ count: 1 });
+
+    await expect(service.remove(2)).resolves.toBeUndefined();
+    expect(excluirUsuario).toHaveBeenCalledWith({
+      where: { id: 2, excluido_em: null },
+      data: {
+        excluido_em: expect.any(Date),
+        refresh_token_hash: null,
+      },
+    });
+  });
+
+  it('responde 404 se o usuário já foi excluído ou não existe', async () => {
+    excluirUsuario.mockResolvedValueOnce({ count: 0 });
+
+    await expect(service.remove(2)).rejects.toThrow(NotFoundException);
   });
 });

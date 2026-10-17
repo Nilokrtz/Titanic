@@ -140,6 +140,7 @@ model usuarios {
   refresh_token_hash String?      @db.VarChar(255)
   perfil_id          Int?
   criado_em          DateTime?    @default(now()) @db.Timestamp(6)
+  excluido_em        DateTime?    @db.Timestamp(6)
   personagens        personagens?
   perfis             perfis?      @relation(fields: [perfil_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

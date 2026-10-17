@@ -64,11 +64,12 @@ export class AuthService {
     const email = credenciais.email.trim().toLowerCase();
     const usuario = await this.prisma.usuarios.findUnique({
       where: { email },
-      select: { id: true, senha: true },
+      select: { id: true, senha: true, excluido_em: true },
     });
 
     if (
       !usuario ||
+      usuario.excluido_em ||
       !(await this.senhasService.conferirSenha(
         credenciais.senha,
         usuario.senha,
@@ -112,6 +113,7 @@ export class AuthService {
     const atualizacao = await this.prisma.usuarios.updateMany({
       where: {
         id: conteudo.sub,
+        excluido_em: null,
         refresh_token_hash: this.hashToken(solicitacao.refresh_token),
       },
       data: { refresh_token_hash: this.hashToken(novosTokens.refresh_token) },
@@ -130,11 +132,12 @@ export class AuthService {
       select: {
         id: true,
         email: true,
+        excluido_em: true,
         perfis: { select: { nome: true } },
       },
     });
 
-    if (!usuario) {
+    if (!usuario || usuario.excluido_em) {
       throw new UnauthorizedException('Sessão inválida.');
     }
 

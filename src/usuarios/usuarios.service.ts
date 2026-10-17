@@ -71,10 +71,13 @@ export class UsuariosService {
   ): Promise<ListarUsuariosRespostaDto> {
     const usuarioAutenticado = await this.prisma.usuarios.findUnique({
       where: { id: usuarioId },
-      select: { perfis: { select: { nome: true } } },
+      select: {
+        excluido_em: true,
+        perfis: { select: { nome: true } },
+      },
     });
 
-    if (!usuarioAutenticado) {
+    if (!usuarioAutenticado || usuarioAutenticado.excluido_em) {
       throw new UnauthorizedException('Sessão inválida.');
     }
 
@@ -82,7 +85,7 @@ export class UsuariosService {
       throw new ForbiddenException('Apenas o professor pode listar usuários.');
     }
 
-    const condicoes: Prisma.usuariosWhereInput = {};
+    const condicoes: Prisma.usuariosWhereInput = { excluido_em: null };
 
     if (filtros.perfil_id) {
       condicoes.perfil_id = filtros.perfil_id;
@@ -120,10 +123,14 @@ export class UsuariosService {
   async findOne(id: number, usuarioId: number): Promise<UsuarioRespostaDto> {
     const usuarioAutenticado = await this.prisma.usuarios.findUnique({
       where: { id: usuarioId },
-      select: { id: true, perfis: { select: { nome: true } } },
+      select: {
+        id: true,
+        excluido_em: true,
+        perfis: { select: { nome: true } },
+      },
     });
 
-    if (!usuarioAutenticado) {
+    if (!usuarioAutenticado || usuarioAutenticado.excluido_em) {
       throw new UnauthorizedException('Sessão inválida.');
     }
 
@@ -139,11 +146,12 @@ export class UsuariosService {
       select: {
         id: true,
         email: true,
+        excluido_em: true,
         perfis: { select: { nome: true } },
       },
     });
 
-    if (!usuario) {
+    if (!usuario || usuario.excluido_em) {
       throw new NotFoundException('Usuário não encontrado.');
     }
 
@@ -160,10 +168,10 @@ export class UsuariosService {
   ): Promise<UsuarioRespostaDto> {
     const usuarioExistente = await this.prisma.usuarios.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, excluido_em: true },
     });
 
-    if (!usuarioExistente) {
+    if (!usuarioExistente || usuarioExistente.excluido_em) {
       throw new NotFoundException('Usuário não encontrado.');
     }
 
@@ -216,7 +224,14 @@ export class UsuariosService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} usuario`;
+  async remove(id: number): Promise<void> {
+    const exclusao = await this.prisma.usuarios.updateMany({
+      where: { id, excluido_em: null },
+      data: { excluido_em: new Date(), refresh_token_hash: null },
+    });
+
+    if (exclusao.count === 0) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
   }
 }

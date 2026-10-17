@@ -6,6 +6,7 @@ import {
   Put,
   Param,
   Delete,
+  HttpCode,
   ParseIntPipe,
   Query,
   Req,
@@ -18,6 +19,7 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
+  ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -118,7 +120,20 @@ export class UsuariosController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usuariosService.remove(+id);
+  @HttpCode(204)
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Exclui um usuário logicamente' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiNoContentResponse({ description: 'Usuário excluído.' })
+  @ApiBadRequestResponse({ description: 'ID inválido.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({
+    description: 'Apenas o professor pode excluir usuários.',
+  })
+  @ApiNotFoundResponse({ description: 'Usuário não encontrado.' })
+  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.usuariosService.remove(id);
   }
 }
