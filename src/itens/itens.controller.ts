@@ -7,7 +7,7 @@ import{ ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse,
         ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, 
          ApiParam, ApiTags, ApiUnauthorizedResponse, } from '@nestjs/swagger';
 
-import { tipo_peril } from '../generated/prisma/client.js';
+import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -25,7 +25,7 @@ export class ItensController {
 
   @Post()
   @UseGuards(AutenticacaoGuard, RolesGuard)
-  @Roles(tipo_peril.ADMIN_PROFESSOR)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Cadastra um novo item na loja' })
   @ApiCreatedResponse({ type: ItemRespostaDto })
@@ -58,7 +58,7 @@ export class ItensController {
 
   @Put(':id')
   @UseGuards(AutenticacaoGuard, RolesGuard)
-  @Roles(tipo_peril.ADMIN_PROFESSOR)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Atualiza dados de um item' })
   @ApiParam({ name: 'id', type: Number })
@@ -76,7 +76,7 @@ export class ItensController {
 
   @Delete(':id')
   @UseGuards(AutenticacaoGuard, RolesGuard)
-  @Roles(tipo_peril.ADMIN_PROFESSOR)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Remove um item da loja' })
   @ApiParam({ name: 'id', type: Number })
@@ -84,7 +84,7 @@ export class ItensController {
   @ApiNotFoundResponse({ description: 'Item nao encontrado.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou invalido.' })
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissao.' }) 
-  
+
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.itensService.remove(id);
   }
