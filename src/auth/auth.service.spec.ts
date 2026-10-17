@@ -1,4 +1,4 @@
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuthService } from './auth.service.js';
@@ -8,6 +8,7 @@ describe('AuthService', () => {
   const buscarUsuario = vi.fn();
   const atualizarUsuarios = vi.fn();
   const conferirSenha = vi.fn();
+  const gerarHash = vi.fn();
   const verificarToken = vi.fn();
   const assinarToken = vi.fn();
   const prisma = {
@@ -16,7 +17,10 @@ describe('AuthService', () => {
       updateMany: atualizarUsuarios,
     },
   } as unknown as PrismaService;
-  const senhasService = { conferirSenha } as unknown as SenhasService;
+  const senhasService = {
+    conferirSenha,
+    gerarHash,
+  } as unknown as SenhasService;
   const jwtService = {
     verifyAsync: verificarToken,
     signAsync: assinarToken,
@@ -27,6 +31,7 @@ describe('AuthService', () => {
     buscarUsuario.mockReset();
     atualizarUsuarios.mockReset();
     conferirSenha.mockReset();
+    gerarHash.mockReset();
     verificarToken.mockReset();
     assinarToken.mockReset();
   });
@@ -85,5 +90,60 @@ describe('AuthService', () => {
     atualizarUsuarios.mockResolvedValueOnce({ count: 0 });
 
     await expect(service.logout(2)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('altera a senha e invalida o refresh token', async () => {
+    buscarUsuario.mockResolvedValueOnce({
+      senha: 'hash-antigo',
+      excluido_em: null,
+    });
+    conferirSenha.mockResolvedValueOnce(true);
+    gerarHash.mockResolvedValueOnce('hash-novo');
+    atualizarUsuarios.mockResolvedValueOnce({ count: 1 });
+
+    await expect(
+      service.alterarSenha(2, {
+        senha_atual: 'senha-antiga',
+        nova_senha: 'senha-nova',
+      }),
+    ).resolves.toBeUndefined();
+    expect(conferirSenha).toHaveBeenCalledWith('senha-antiga', 'hash-antigo');
+    expect(gerarHash).toHaveBeenCalledWith('senha-nova');
+    expect(atualizarUsuarios).toHaveBeenCalledWith({
+      where: { id: 2, senha: 'hash-antigo', excluido_em: null },
+      data: { senha: 'hash-novo', refresh_token_hash: null },
+    });
+  });
+
+  it('recusa senha atual incorreta', async () => {
+    buscarUsuario.mockResolvedValueOnce({
+      senha: 'hash-antigo',
+      excluido_em: null,
+    });
+    conferirSenha.mockResolvedValueOnce(false);
+
+    await expect(
+      service.alterarSenha(2, {
+        senha_atual: 'senha-errada',
+        nova_senha: 'senha-nova',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(atualizarUsuarios).not.toHaveBeenCalled();
+  });
+
+  it('recusa repetir a senha atual', async () => {
+    buscarUsuario.mockResolvedValueOnce({
+      senha: 'hash-antigo',
+      excluido_em: null,
+    });
+    conferirSenha.mockResolvedValueOnce(true);
+
+    await expect(
+      service.alterarSenha(2, {
+        senha_atual: 'mesma-senha',
+        nova_senha: 'mesma-senha',
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(atualizarUsuarios).not.toHaveBeenCalled();
   });
 });

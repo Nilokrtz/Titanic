@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Put,
   Req,
   UseGuards,
   ValidationPipe,
@@ -21,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AuthService } from './auth.service.js';
+import { AlterarSenhaDto } from './dto/alterar-senha.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { LoginRespostaDto } from './dto/login-resposta.dto.js';
 import { MeRespostaDto } from './dto/me-resposta.dto.js';
@@ -85,6 +87,23 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   logout(@Req() requisicao: Request & { usuarioId: number }): Promise<void> {
     return this.authService.logout(requisicao.usuarioId);
+  }
+
+  @Put('senha')
+  @HttpCode(204)
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Altera a senha do usuário autenticado' })
+  @ApiNoContentResponse({ description: 'Senha alterada.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou senha repetida.' })
+  @ApiUnauthorizedResponse({
+    description: 'Token ou senha atual inválidos.',
+  })
+  alterarSenha(
+    @Req() requisicao: Request & { usuarioId: number },
+    @Body() alteracao: AlterarSenhaDto,
+  ): Promise<void> {
+    return this.authService.alterarSenha(requisicao.usuarioId, alteracao);
   }
 
   @Get('me')

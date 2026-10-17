@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -8,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomUUID } from 'node:crypto';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AlterarSenhaDto } from './dto/alterar-senha.dto.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
 import { RegistrarRespostaDto } from './dto/registrar-resposta.dto.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -130,6 +132,43 @@ export class AuthService {
     const atualizacao = await this.prisma.usuarios.updateMany({
       where: { id: usuarioId, excluido_em: null },
       data: { refresh_token_hash: null },
+    });
+
+    if (atualizacao.count !== 1) {
+      throw new UnauthorizedException('Sessão inválida.');
+    }
+  }
+
+  async alterarSenha(
+    usuarioId: number,
+    alteracao: AlterarSenhaDto,
+  ): Promise<void> {
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { id: usuarioId },
+      select: { senha: true, excluido_em: true },
+    });
+
+    if (!usuario || usuario.excluido_em) {
+      throw new UnauthorizedException('Sessão inválida.');
+    }
+
+    if (
+      !(await this.senhasService.conferirSenha(
+        alteracao.senha_atual,
+        usuario.senha,
+      ))
+    ) {
+      throw new UnauthorizedException('Senha atual inválida.');
+    }
+
+    if (alteracao.nova_senha === alteracao.senha_atual) {
+      throw new BadRequestException('A nova senha deve ser diferente.');
+    }
+
+    const novoHash = await this.senhasService.gerarHash(alteracao.nova_senha);
+    const atualizacao = await this.prisma.usuarios.updateMany({
+      where: { id: usuarioId, senha: usuario.senha, excluido_em: null },
+      data: { senha: novoHash, refresh_token_hash: null },
     });
 
     if (atualizacao.count !== 1) {
