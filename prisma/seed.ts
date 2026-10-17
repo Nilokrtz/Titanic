@@ -79,7 +79,7 @@ async function main(){
     update: {},
     create: {
     email: 'nilo@cefet.br',
-    senha: 'senha_nilo_14_12_2026',
+    senha: 'senhanilo',
     perfil_id: perfilAluno.id,
     },
   })
