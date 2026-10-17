@@ -10,11 +10,12 @@ import {
   Query,
   Req,
   UseGuards,
-  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -24,7 +25,10 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { tipo_perfil } from '../generated/prisma/client.js';
 import { UsuariosService } from './usuarios.service.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
 import { ListarUsuariosDto } from './dto/listar-usuarios.dto.js';
@@ -38,7 +42,21 @@ export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
   @Post()
-  create(@Body() createUsuarioDto: CreateUsuarioDto) {
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Cadastra um usuário pelo professor' })
+  @ApiCreatedResponse({ type: UsuarioRespostaDto })
+  @ApiBadRequestResponse({ description: 'Dados do usuário inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({
+    description: 'Apenas o professor pode cadastrar usuários.',
+  })
+  @ApiNotFoundResponse({ description: 'Perfil não encontrado.' })
+  @ApiConflictResponse({ description: 'Email já cadastrado.' })
+  create(
+    @Body() createUsuarioDto: CreateUsuarioDto,
+  ): Promise<UsuarioRespostaDto> {
     return this.usuariosService.create(createUsuarioDto);
   }
 
@@ -53,14 +71,7 @@ export class UsuariosController {
     description: 'Apenas o professor pode listar usuários.',
   })
   findAll(
-    @Query(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: true,
-      }),
-    )
-    filtros: ListarUsuariosDto,
+    @Query() filtros: ListarUsuariosDto,
     @Req() requisicao: Request & { usuarioId: number },
   ): Promise<ListarUsuariosRespostaDto> {
     return this.usuariosService.findAll(filtros, requisicao.usuarioId);

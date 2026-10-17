@@ -7,21 +7,21 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { tipo_perfil } from '../../generated/prisma/client.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 
 type AuthenticatedRequest = {
-  user?: {
-    id: number;
-    email: string;
-    perfil?: tipo_perfil;
-  };
+  usuarioId?: number;
 };
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const roles = this.reflector.getAllAndOverride<tipo_perfil[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -32,13 +32,20 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const user = request.user;
-
-    if (!user) {
+    if (!request.usuarioId) {
       throw new UnauthorizedException('Usuário não autenticado.');
     }
 
-    if (!user.perfil || !roles.includes(user.perfil)) {
+    const usuario = await this.prisma.usuarios.findUnique({
+      where: { id: request.usuarioId },
+      select: { perfis: { select: { nome: true } } },
+    });
+
+    if (!usuario) {
+      throw new UnauthorizedException('Sessão inválida.');
+    }
+
+    if (!usuario.perfis || !roles.includes(usuario.perfis.nome)) {
       throw new ForbiddenException('Você não tem permissão para acessar esta rota.');
     }
 
