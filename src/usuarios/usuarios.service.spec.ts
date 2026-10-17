@@ -15,6 +15,7 @@ describe('UsuariosService', () => {
   const listarUsuarios = vi.fn();
   const buscarPerfil = vi.fn();
   const criarUsuario = vi.fn();
+  const atualizarUsuario = vi.fn();
   const gerarHash = vi.fn();
   const prisma = {
     perfis: { findUnique: buscarPerfil },
@@ -23,6 +24,7 @@ describe('UsuariosService', () => {
       count: contarUsuarios,
       findMany: listarUsuarios,
       create: criarUsuario,
+      update: atualizarUsuario,
     },
   } as unknown as PrismaService;
   const senhasService = { gerarHash } as unknown as SenhasService;
@@ -34,6 +36,7 @@ describe('UsuariosService', () => {
     listarUsuarios.mockReset();
     buscarPerfil.mockReset();
     criarUsuario.mockReset();
+    atualizarUsuario.mockReset();
     gerarHash.mockReset();
   });
 
@@ -90,6 +93,104 @@ describe('UsuariosService', () => {
 
     await expect(
       service.create({ email: 'aluno@exemplo.com', senha: 'senha', perfil_id: 3 }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('atualiza email e perfil sem alterar a senha', async () => {
+    buscarUsuario.mockResolvedValueOnce({ id: 2 });
+    buscarPerfil.mockResolvedValueOnce({ id: 3 });
+    atualizarUsuario.mockResolvedValueOnce({
+      id: 2,
+      email: 'aluno@exemplo.com',
+      perfis: { nome: 'ALUNO' },
+    });
+
+    await expect(
+      service.update(2, {
+        email: ' Aluno@Exemplo.com ',
+        perfil_id: 3,
+      }),
+    ).resolves.toEqual({
+      id: 2,
+      email: 'aluno@exemplo.com',
+      perfil: 'ALUNO',
+    });
+    expect(gerarHash).not.toHaveBeenCalled();
+    expect(atualizarUsuario).toHaveBeenCalledWith({
+      where: { id: 2 },
+      data: {
+        email: 'aluno@exemplo.com',
+        perfis: { connect: { id: 3 } },
+      },
+      select: {
+        id: true,
+        email: true,
+        perfis: { select: { nome: true } },
+      },
+    });
+  });
+
+  it('gera hash da nova senha e invalida o refresh token', async () => {
+    buscarUsuario.mockResolvedValueOnce({ id: 2 });
+    buscarPerfil.mockResolvedValueOnce({ id: 3 });
+    gerarHash.mockResolvedValueOnce('novo-hash');
+    atualizarUsuario.mockResolvedValueOnce({
+      id: 2,
+      email: 'aluno@exemplo.com',
+      perfis: { nome: 'ALUNO' },
+    });
+
+    await service.update(2, {
+      email: 'aluno@exemplo.com',
+      perfil_id: 3,
+      senha: 'nova-senha',
+    });
+
+    expect(gerarHash).toHaveBeenCalledWith('nova-senha');
+    expect(atualizarUsuario).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          email: 'aluno@exemplo.com',
+          perfis: { connect: { id: 3 } },
+          senha: 'novo-hash',
+          refresh_token_hash: null,
+        },
+      }),
+    );
+  });
+
+  it('rejeita atualização de usuário inexistente', async () => {
+    buscarUsuario.mockResolvedValueOnce(null);
+
+    await expect(
+      service.update(99, { email: 'aluno@exemplo.com', perfil_id: 3 }),
+    ).rejects.toThrow(NotFoundException);
+    expect(buscarPerfil).not.toHaveBeenCalled();
+    expect(atualizarUsuario).not.toHaveBeenCalled();
+  });
+
+  it('rejeita atualização com perfil inexistente', async () => {
+    buscarUsuario.mockResolvedValueOnce({ id: 2 });
+    buscarPerfil.mockResolvedValueOnce(null);
+
+    await expect(
+      service.update(2, { email: 'aluno@exemplo.com', perfil_id: 99 }),
+    ).rejects.toThrow(NotFoundException);
+    expect(atualizarUsuario).not.toHaveBeenCalled();
+  });
+
+  it('rejeita email já usado por outro usuário', async () => {
+    buscarUsuario.mockResolvedValueOnce({ id: 2 });
+    buscarPerfil.mockResolvedValueOnce({ id: 3 });
+    atualizarUsuario.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError('Email duplicado', {
+        code: 'P2002',
+        clientVersion: '7.10.0',
+      }),
+    );
+
+    await expect(
+      service.update(2, { email: 'ocupado@exemplo.com', perfil_id: 3 }),
     ).rejects.toThrow(ConflictException);
   });
 

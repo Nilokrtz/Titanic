@@ -154,8 +154,66 @@ export class UsuariosService {
     };
   }
 
-  update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
-    return `This action updates a #${id} usuario`;
+  async update(
+    id: number,
+    atualizacao: UpdateUsuarioDto,
+  ): Promise<UsuarioRespostaDto> {
+    const usuarioExistente = await this.prisma.usuarios.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!usuarioExistente) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    const perfil = await this.prisma.perfis.findUnique({
+      where: { id: atualizacao.perfil_id },
+      select: { id: true },
+    });
+
+    if (!perfil) {
+      throw new NotFoundException('Perfil não encontrado.');
+    }
+
+    const dadosAtualizacao: Prisma.usuariosUpdateInput = {
+      email: atualizacao.email.trim().toLowerCase(),
+      perfis: { connect: { id: perfil.id } },
+    };
+
+    if (atualizacao.senha) {
+      dadosAtualizacao.senha = await this.senhasService.gerarHash(
+        atualizacao.senha,
+      );
+      dadosAtualizacao.refresh_token_hash = null;
+    }
+
+    try {
+      const usuario = await this.prisma.usuarios.update({
+        where: { id },
+        data: dadosAtualizacao,
+        select: {
+          id: true,
+          email: true,
+          perfis: { select: { nome: true } },
+        },
+      });
+
+      return {
+        id: usuario.id,
+        email: usuario.email,
+        perfil: usuario.perfis?.nome ?? null,
+      };
+    } catch (erro) {
+      if (
+        erro instanceof Prisma.PrismaClientKnownRequestError &&
+        erro.code === 'P2002'
+      ) {
+        throw new ConflictException('Email já cadastrado.');
+      }
+
+      throw erro;
+    }
   }
 
   remove(id: number) {

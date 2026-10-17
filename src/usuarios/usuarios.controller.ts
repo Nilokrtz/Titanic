@@ -97,8 +97,24 @@ export class UsuariosController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateUsuarioDto: UpdateUsuarioDto) {
-    return this.usuariosService.update(+id, updateUsuarioDto);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Atualiza um usuário pelo professor' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ type: UsuarioRespostaDto })
+  @ApiBadRequestResponse({ description: 'ID ou dados do usuário inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({
+    description: 'Apenas o professor pode atualizar usuários.',
+  })
+  @ApiNotFoundResponse({ description: 'Usuário ou perfil não encontrado.' })
+  @ApiConflictResponse({ description: 'Email já cadastrado.' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() atualizacao: UpdateUsuarioDto,
+  ): Promise<UsuarioRespostaDto> {
+    return this.usuariosService.update(id, atualizacao);
   }
 
   @Delete(':id')
