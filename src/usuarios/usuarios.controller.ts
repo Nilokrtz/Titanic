@@ -7,8 +7,10 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  Query,
   Req,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -25,6 +27,8 @@ import type { Request } from 'express';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { UsuariosService } from './usuarios.service.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
+import { ListarUsuariosDto } from './dto/listar-usuarios.dto.js';
+import { ListarUsuariosRespostaDto } from './dto/listar-usuarios-resposta.dto.js';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto.js';
 import { UsuarioRespostaDto } from './dto/usuario-resposta.dto.js';
 
@@ -39,8 +43,27 @@ export class UsuariosController {
   }
 
   @Get()
-  findAll() {
-    return this.usuariosService.findAll();
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Lista usuários para o professor' })
+  @ApiOkResponse({ type: ListarUsuariosRespostaDto })
+  @ApiBadRequestResponse({ description: 'Filtros ou paginação inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({
+    description: 'Apenas o professor pode listar usuários.',
+  })
+  findAll(
+    @Query(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    )
+    filtros: ListarUsuariosDto,
+    @Req() requisicao: Request & { usuarioId: number },
+  ): Promise<ListarUsuariosRespostaDto> {
+    return this.usuariosService.findAll(filtros, requisicao.usuarioId);
   }
 
   @Get(':id')
