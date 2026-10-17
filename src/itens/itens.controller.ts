@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Patch,
+import { Controller, Get, Post, Body, Put,
          Param, Delete, Query, UseGuards,
-         ValidationPipe, ParseIntPipe, } from '@nestjs/common';
+         ValidationPipe, ParseIntPipe,
+         } from '@nestjs/common';
 
 import{ ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse,
         ApiNotFoundResponse,ApiOkResponse, ApiOperation, 
@@ -55,7 +56,7 @@ export class ItensController {
     return this.itensService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Atualiza dados de um item' })
