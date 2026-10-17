@@ -1,13 +1,16 @@
 import { Controller, Get, Post, Body, Put,
          Param, Delete, Query, UseGuards,
-         ValidationPipe, ParseIntPipe,
+          ParseIntPipe,
          } from '@nestjs/common';
 
 import{ ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse,
-        ApiNotFoundResponse,ApiOkResponse, ApiOperation, 
+        ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, 
          ApiParam, ApiTags, ApiUnauthorizedResponse, } from '@nestjs/swagger';
 
+import { tipo_peril } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { ItensService } from './itens.service.js';
 import { ItemRespostaDto } from './dto/item-resposta.dto.js';
 import { FindItensQueryDto } from './dto/find-itens-query.dto.js';
@@ -21,17 +24,17 @@ export class ItensController {
   constructor(private readonly itensService: ItensService) {}
 
   @Post()
-  @UseGuards(AutenticacaoGuard)
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_peril.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Cadastra um novo item na loja' })
   @ApiCreatedResponse({ type: ItemRespostaDto })
   @ApiBadRequestResponse({ description: 'Dados invalidos.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou invalido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissao.' })
+
   create(
-    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true,        
-  transform: true })) 
-     createItenDto: CreateItenDto,
-     ) {
+    @Body() createItenDto: CreateItenDto) {
     return this.itensService.create(createItenDto);
   }
 
@@ -39,13 +42,10 @@ export class ItensController {
    @ApiOperation({ summary: 'Lista itens da loja com paginacao e filtros' })
    @ApiOkResponse({ type: ListarItensRespostaDto }) 
    @ApiBadRequestResponse({ description: 'Filtros invalidos.' }) 
-  findAll(
-    @Query(new ValidationPipe({ transform: true, whitelist: true,
-      forbidNonWhitelisted: true }))
-      filtros: FindItensQueryDto,
-  ) {
+  findAll(@Query() filtros: FindItensQueryDto) {
     return this.itensService.findAll(filtros);
   }
+
 
   @Get(':id')
   @ApiOperation({ summary: 'Consulta um item pelo ID' })
@@ -57,29 +57,34 @@ export class ItensController {
   }
 
   @Put(':id')
-  @UseGuards(AutenticacaoGuard)
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_peril.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Atualiza dados de um item' })
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({ type: ItemRespostaDto })
   @ApiBadRequestResponse({ description: 'Dados inválidos.' })
   @ApiNotFoundResponse({ description: 'Item não encontrado.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
   update
   (@Param('id', ParseIntPipe) id: number, 
-   @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true,        
-  transform: true }))
-   updateItenDto: UpdateItenDto,
+   @Body() updateItenDto: UpdateItenDto,
   ) {
     return this.itensService.update(id, updateItenDto);
   }
 
   @Delete(':id')
-  @UseGuards(AutenticacaoGuard)
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_peril.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Remove um item da loja' })
   @ApiParam({ name: 'id', type: Number })
   @ApiOkResponse({ description: 'Item removido com sucesso.' })
   @ApiNotFoundResponse({ description: 'Item nao encontrado.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou invalido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissao.' }) 
+  
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.itensService.remove(id);
   }
