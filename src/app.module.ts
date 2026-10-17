@@ -7,7 +7,6 @@ import { PerfisModule } from './perfis/perfis.module.js';
 import { ClassesModule } from './classes/classes.module.js';
 import { RanksModule } from './ranks/ranks.module.js';
 import { PersonagensModule } from './personagens/personagens.module.js';
-import { AtributosModule } from './atributos/atributos.module.js';
 import { ItensModule } from './itens/itens.module.js';
 import { InventarioItensModule } from './inventario_itens/inventario_itens.module.js';
 import { SalasDesafioModule } from './salas_desafio/salas_desafio.module.js';
@@ -15,7 +14,7 @@ import { QuizQuestoesModule } from './quiz_questoes/quiz_questoes.module.js';
 import { TentativasSalaModule } from './tentativas_sala/tentativas_sala.module.js';
 
 @Module({
-  imports: [AuthModule, UsuariosModule, PerfisModule, ClassesModule, RanksModule, PersonagensModule, AtributosModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule],
+  imports: [AuthModule, UsuariosModule, PerfisModule, ClassesModule, RanksModule, PersonagensModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule],
   controllers: [AppController],
   providers: [AppService],
 })
