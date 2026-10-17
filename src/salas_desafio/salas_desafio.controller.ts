@@ -1,34 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {Controller,Post,Body,UseGuards} from '@nestjs/common';
+import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse} from '@nestjs/swagger';
+import { tipo_perfil } from '../generated/prisma/client.js';
+import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { SalasDesafioService } from './salas_desafio.service.js';
 import { CreateSalasDesafioDto } from './dto/create-salas_desafio.dto.js';
-import { UpdateSalasDesafioDto } from './dto/update-salas_desafio.dto.js';
 
-@Controller('salas-desafio')
+@ApiTags('Salas Desafio')
+@Controller('salas')
 export class SalasDesafioController {
   constructor(private readonly salasDesafioService: SalasDesafioService) {}
 
   @Post()
-  create(@Body() createSalasDesafioDto: CreateSalasDesafioDto) {
-    return this.salasDesafioService.create(createSalasDesafioDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.salasDesafioService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.salasDesafioService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSalasDesafioDto: UpdateSalasDesafioDto) {
-    return this.salasDesafioService.update(+id, updateSalasDesafioDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.salasDesafioService.remove(+id);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Cadastra uma nova sala de desafio (Apenas Professores/Admins)' })
+  @ApiCreatedResponse({ description: 'Sala cadastrada com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou número da sala já existente.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  create(@Body() createDto: CreateSalasDesafioDto,
+  ) {
+    return this.salasDesafioService.create(createDto);
   }
 }

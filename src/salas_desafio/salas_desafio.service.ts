@@ -1,26 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { SalasDesafioRepository } from './salas_desafio.repository.js';
 import { CreateSalasDesafioDto } from './dto/create-salas_desafio.dto.js';
-import { UpdateSalasDesafioDto } from './dto/update-salas_desafio.dto.js';
 
 @Injectable()
 export class SalasDesafioService {
-  create(createSalasDesafioDto: CreateSalasDesafioDto) {
-    return 'This action adds a new salasDesafio';
-  }
+  constructor(private readonly repository: SalasDesafioRepository) {}
 
-  findAll() {
-    return `This action returns all salasDesafio`;
-  }
+  async create(createDto: CreateSalasDesafioDto) {
+    const salaExistente = await this.repository.buscarPorNumeroSala(createDto.numero_sala);
+    if (salaExistente) {
+      throw new BadRequestException(`A sala número ${createDto.numero_sala} já está cadastrada.`);
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} salasDesafio`;
-  }
+    if (createDto.rank_minimo_id) {
+      const rank = await this.repository.buscarRankPorId(createDto.rank_minimo_id);
+      if (!rank) {
+        throw new NotFoundException('Rank mínimo informado não foi encontrado.');
+      }
+    }
 
-  update(id: number, updateSalasDesafioDto: UpdateSalasDesafioDto) {
-    return `This action updates a #${id} salasDesafio`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} salasDesafio`;
+    return this.repository.criar(createDto);
   }
 }
