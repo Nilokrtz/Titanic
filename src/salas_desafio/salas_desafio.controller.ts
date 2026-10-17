@@ -1,5 +1,5 @@
-import {Controller,Post,Body,UseGuards} from '@nestjs/common';
-import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse} from '@nestjs/swagger';
+import {Controller,Post,Get,Body,UseGuards, Param, ParseIntPipe} from '@nestjs/common';
+import { ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse,ApiOkResponse, ApiParam, ApiNotFoundResponse} from '@nestjs/swagger';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -24,5 +24,27 @@ export class SalasDesafioController {
   create(@Body() createDto: CreateSalasDesafioDto,
   ) {
     return this.salasDesafioService.create(createDto);
+  }
+
+  @Get()
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Lista todas as salas de desafio disponíveis' })
+  @ApiOkResponse({ description: 'Lista de salas retornadas com sucesso' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  findAll(){
+    return this.salasDesafioService.findAll();
+  }
+
+  @Get(':id')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Consulta as informações de uma sala pelo ID da mesma' })
+  @ApiParam({name: 'id', type: Number, description: 'ID da sala de desafio'})
+  @ApiOkResponse({ description: 'Sala de desafio encontrada' })
+  @ApiNotFoundResponse({ description: 'Sala de desafio não encontrada' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  findById(@Param('id', ParseIntPipe) id: number){
+    return this.salasDesafioService.findById(id);
   }
 }

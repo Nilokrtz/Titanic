@@ -26,4 +26,24 @@ export class SalasDesafioRepository {
       },
     });
   }
+
+  async listarTodasAsSalas(){
+    return this.prisma.salas_desafio.findMany({
+      include:{
+        ranks: true
+      },
+      orderBy:{
+        numero_sala: 'asc'
+      }
+    });
+  }
+
+  async buscarSalaPorId(id: Number){
+    return this.prisma.salas_desafio.findUnique({
+      where:{id},
+      include:{
+        ranks: true
+      }
+    });
+  }
 }

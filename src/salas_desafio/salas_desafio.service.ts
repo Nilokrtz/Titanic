@@ -21,4 +21,16 @@ export class SalasDesafioService {
 
     return this.repository.criar(createDto);
   }
+
+  async findAll(){
+    return await SalasDesafioRepository.listarTodasAsSalas(); 
+  }
+
+  async findById(id: Number){
+    const sala = await this.repository.buscarSalaPorId(id);
+    if(!sala){
+      throw new NotFoundException('Sala de desafio não encontrada')
+    }
+    return sala;
+  }
 }
