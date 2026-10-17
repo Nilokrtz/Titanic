@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { SalasDesafioRepository } from './salas_desafio.repository.js';
 import { CreateSalasDesafioDto } from './dto/create-salas_desafio.dto.js';
+import { UpdateSalasDesafioDto } from './dto/update-salas_desafio.dto.js';
 
 @Injectable()
 export class SalasDesafioService {
@@ -32,5 +33,26 @@ export class SalasDesafioService {
       throw new NotFoundException('Sala de desafio não encontrada')
     }
     return sala;
+  }
+
+  async update(id: number, updateDto: UpdateSalasDesafioDto) {
+    
+    await this.findById(id);
+
+    if (updateDto.numero_sala !== undefined) {
+      const salaComMesmoNumero = await this.repository.buscarPorNumeroSala(updateDto.numero_sala);
+      if (salaComMesmoNumero && salaComMesmoNumero.id !== id) {
+        throw new BadRequestException(`A sala número ${updateDto.numero_sala} já está cadastrada em outra sala.`);
+      }
+    }
+
+    if (updateDto.rank_minimo_id !== undefined && updateDto.rank_minimo_id !== null) {
+      const rank = await this.repository.buscarRankPorId(updateDto.rank_minimo_id);
+      if (!rank) {
+        throw new NotFoundException('Rank mínimo informado não foi encontrado.');
+      }
+    }
+
+    return this.repository.atualizarSala(id, updateDto);
   }
 }
