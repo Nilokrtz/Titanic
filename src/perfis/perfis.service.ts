@@ -59,8 +59,24 @@ export class PerfisService {
     return perfil;
   }
 
-  update(id: number, updatePerfiDto: UpdatePerfiDto) {
-    return `This action updates a #${id} perfi`;
+  async update(
+    id: number,
+    atualizacao: UpdatePerfiDto,
+  ): Promise<PerfilRespostaDto> {
+    const perfil = await this.prisma.perfis.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!perfil) {
+      throw new NotFoundException('Perfil não encontrado.');
+    }
+
+    return this.prisma.perfis.update({
+      where: { id },
+      data: { descricao: atualizacao.descricao },
+      select: { id: true, nome: true, descricao: true },
+    });
   }
 
   remove(id: number) {

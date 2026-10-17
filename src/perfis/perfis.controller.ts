@@ -3,7 +3,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Put,
   Param,
   Delete,
   ParseIntPipe,
@@ -13,6 +13,7 @@ import {
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -20,7 +21,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { tipo_perfil } from '../generated/prisma/client.js';
 import { PerfisService } from './perfis.service.js';
 import { CreatePerfiDto } from './dto/create-perfi.dto.js';
 import { ListarPerfisDto } from './dto/listar-perfis.dto.js';
@@ -64,9 +68,24 @@ export class PerfisController {
     return this.perfisService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePerfiDto: UpdatePerfiDto) {
-    return this.perfisService.update(+id, updatePerfiDto);
+  @Put(':id')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Atualiza a descrição de um perfil' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ type: PerfilRespostaDto })
+  @ApiBadRequestResponse({ description: 'ID ou descrição inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({
+    description: 'Apenas o professor pode atualizar perfis.',
+  })
+  @ApiNotFoundResponse({ description: 'Perfil não encontrado.' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() atualizacao: UpdatePerfiDto,
+  ): Promise<PerfilRespostaDto> {
+    return this.perfisService.update(id, atualizacao);
   }
 
   @Delete(':id')
