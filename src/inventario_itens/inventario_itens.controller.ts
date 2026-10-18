@@ -5,6 +5,7 @@ import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { FindInventarioQueryDto } from './dto/find-inventario-query.dto.js';
 import { ComprarItemDto } from './dto/comprar-item.dto.js';
 import { VenderItemDto } from './dto/vender-item.dto.js';
+import { UsarItemDto } from './dto/usar-item.dto.js';
 import { InventarioItensService } from './inventario_itens.service.js';
 
 @ApiTags('Inventário')
@@ -110,6 +111,62 @@ export class InventarioItensController {
       personagemId,
       venderItemDto,
       requisicao.usuarioId,
+    );
+  }
+
+  @Post(':id/usar')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Usa um item do próprio inventário aplicando seus efeitos',
+  })
+  @ApiParam({
+    name: 'personagemId',
+    type: Number,
+    required: false,
+    description: 'ID do personagem',
+  })
+  @ApiParam({
+    name: 'personagenId',
+    type: Number,
+    required: false,
+    description: 'ID do personagem (alias)',
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'ID do registro no inventário ou ID do item',
+  })
+  @ApiOkResponse({ description: 'Item utilizado com sucesso.' })
+  @ApiBadRequestResponse({
+    description:
+      'Personagem derrotado, uso de item proibido no Boss Final ou item não utilizável.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({
+    description: 'Apenas o dono do personagem pode usar seus itens.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Personagem ou item não encontrado no inventário.',
+  })
+  usarItem(
+    @Param('personagemId') paramPersonagemId: string | undefined,
+    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Param('id', ParseIntPipe) id: number,
+    @Req() requisicao: Request & { usuarioId: number },
+    @Body() usarItemDto?: UsarItemDto,
+  ) {
+    const rawId = paramPersonagemId ?? paramPersonagenId;
+    const personagemId = Number(rawId);
+    if (!rawId || isNaN(personagemId)) {
+      throw new BadRequestException('ID do personagem inválido.');
+    }
+
+    return this.inventarioItensService.usarItem(
+      personagemId,
+      id,
+      requisicao.usuarioId,
+      usarItemDto,
     );
   }
 

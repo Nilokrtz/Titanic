@@ -1,12 +1,5 @@
-import { Controller, Get, Post, Body, Put,
-         Param, Delete, Query, UseGuards,
-          ParseIntPipe,
-         } from '@nestjs/common';
-
-import{ ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse,
-        ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, 
-         ApiParam, ApiTags, ApiUnauthorizedResponse, } from '@nestjs/swagger';
-
+import { Controller, Get, Post, Body, Put, Param, Delete, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
+import{ ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse, } from '@nestjs/swagger';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';

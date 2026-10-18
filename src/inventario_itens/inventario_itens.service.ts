@@ -6,6 +6,7 @@ import { FindInventarioQueryDto } from './dto/find-inventario-query.dto.js';
 import { UpdateInventarioItenDto } from './dto/update-inventario_iten.dto.js';
 import { ComprarItemDto } from './dto/comprar-item.dto.js';
 import { VenderItemDto } from './dto/vender-item.dto.js';
+import { UsarItemDto } from './dto/usar-item.dto.js';
 
 @Injectable()
 export class InventarioItensService {
@@ -34,7 +35,6 @@ export class InventarioItensService {
       );
     }
 
-    // 1. Busca e valida o personagem
     const personagem = await this.prisma.personagens.findUnique({
       where: { id: personagemId },
     });
@@ -43,7 +43,6 @@ export class InventarioItensService {
       throw new NotFoundException('Personagem não encontrado.');
     }
 
-    // 2. Valida se o usuário tem permissão para comprar para este personagem
     if (usuarioId !== undefined) {
       const usuario = await this.prisma.usuarios.findUnique({
         where: { id: usuarioId },
@@ -62,7 +61,6 @@ export class InventarioItensService {
       }
     }
 
-    // 3. Busca e valida o item no catálogo da loja
     const item = await this.prisma.itens.findUnique({
       where: { id: itemId },
     });
@@ -79,9 +77,7 @@ export class InventarioItensService {
 
     const custoTotal = item.preco_moedas * quantidade;
 
-    // 4. Executa a transação atômica
     return this.prisma.$transaction(async (tx) => {
-      // Re-valida o saldo do personagem
       const personagemTx = await tx.personagens.findUnique({
         where: { id: personagemId },
       });
@@ -97,7 +93,6 @@ export class InventarioItensService {
         );
       }
 
-      // Re-valida a restrição de inventário na mão (Máximo de 2 itens)
       const inventarioAtual = await tx.inventario_itens.findMany({
         where: { personagem_id: personagemId },
       });
@@ -113,7 +108,6 @@ export class InventarioItensService {
         );
       }
 
-      // Deduz as moedas do personagem (saldo não-negativo garantido)
       const personagemAtualizado = await tx.personagens.update({
         where: { id: personagemId },
         data: {
@@ -121,7 +115,6 @@ export class InventarioItensService {
         },
       });
 
-      // Verifica se o item já existe no inventário para empilhar (stack)
       const itemExistente = inventarioAtual.find(
         (inv) => inv.item_id === itemId,
       );
@@ -186,7 +179,6 @@ export class InventarioItensService {
       );
     }
 
-    // 1. Busca e valida o personagem
     const personagem = await this.prisma.personagens.findUnique({
       where: { id: personagemId },
     });
@@ -195,7 +187,6 @@ export class InventarioItensService {
       throw new NotFoundException('Personagem não encontrado.');
     }
 
-    // 2. Valida permissão do usuário (apenas dono do personagem pode vender itens do próprio inventário)
     if (usuarioId !== undefined) {
       const usuario = await this.prisma.usuarios.findUnique({
         where: { id: usuarioId },
@@ -212,7 +203,6 @@ export class InventarioItensService {
       }
     }
 
-    // 3. Localiza o registro do item no inventário do personagem
     let registro = null;
 
     if (inventarioId) {
@@ -253,7 +243,6 @@ export class InventarioItensService {
 
     const itemCatalogo = registro.itens;
 
-    // Regra de negócio: itens lendários Easter Egg não podem ser vendidos
     if (itemCatalogo.tipo_efeito === 'EASTER_EGG') {
       throw new BadRequestException(
         'Itens lendários do tipo Easter Egg não podem ser vendidos.',
@@ -267,14 +256,11 @@ export class InventarioItensService {
       );
     }
 
-    // 4. Regra de Negócio: Sistema de Venda de Itens (Taxa de 10% / Perda de 10%)
     const precoOriginalUnitario = itemCatalogo.preco_moedas;
     const valorUnitarioVenda = Math.floor(precoOriginalUnitario * 0.9);
     const valorTotalRecebido = valorUnitarioVenda * quantidade;
 
-    // 5. Executa transação atômica
     return this.prisma.$transaction(async (tx) => {
-      // Credita as moedas no personagem
       const personagemAtualizado = await tx.personagens.update({
         where: { id: personagemId },
         data: {
@@ -308,6 +294,210 @@ export class InventarioItensService {
           valor_total_recebido: valorTotalRecebido,
         },
         moedas_atuais: personagemAtualizado.moedas,
+        quantidade_restante: quantidadeRestante,
+        inventario: inventarioRestante,
+      };
+    });
+  }
+
+  async usarItem(
+    personagemId: number,
+    idOuItemId: number,
+    usuarioId?: number,
+    usarItemDto?: UsarItemDto,
+  ) {
+    const personagem = await this.prisma.personagens.findUnique({
+      where: { id: personagemId },
+    });
+
+    if (!personagem) {
+      throw new NotFoundException('Personagem não encontrado.');
+    }
+
+    if (usuarioId !== undefined) {
+      const usuario = await this.prisma.usuarios.findUnique({
+        where: { id: usuarioId },
+        select: { perfis: { select: { nome: true } } },
+      });
+
+      const isOwner = personagem.usuario_id === usuarioId;
+      const isAdmin = usuario?.perfis?.nome === tipo_perfil.ADMIN_PROFESSOR;
+
+      if (!isOwner && !isAdmin) {
+        throw new ForbiddenException(
+          'Apenas o dono do personagem pode usar itens do seu inventário.',
+        );
+      }
+    }
+
+    if ((personagem.vida_atual ?? 100) <= 0) {
+      throw new BadRequestException(
+        'Personagem derrotado (vida zerada / Game Over). Não é possível usar itens.',
+      );
+    }
+
+    const tentativaAtiva = await this.prisma.tentativas_sala.findFirst({
+      where: {
+        personagem_id: personagemId,
+        status: 'EM_ANDAMENTO',
+        ...(usarItemDto?.tentativa_id
+          ? { id: usarItemDto.tentativa_id }
+          : {}),
+      },
+      include: {
+        salas_desafio: true,
+      },
+    });
+
+    const salaVerificar =
+      tentativaAtiva?.salas_desafio ??
+      (usarItemDto?.sala_id
+        ? await this.prisma.salas_desafio.findUnique({
+            where: { id: usarItemDto.sala_id },
+          })
+        : null);
+
+    if (salaVerificar) {
+      const nomeSala = salaVerificar.nome ?? '';
+      const chefeSala = salaVerificar.chefe_nome ?? '';
+      const isBossFinal =
+        /boss\s*final|chefe\s*final/i.test(nomeSala) ||
+        /boss\s*final|chefe\s*final/i.test(chefeSala) ||
+        (/boss/i.test(nomeSala) && /final/i.test(nomeSala)) ||
+        (/boss/i.test(chefeSala) && /final/i.test(chefeSala));
+
+      if (isBossFinal) {
+        throw new BadRequestException(
+          'É proibido usar qualquer item durante a batalha na sala do Boss Final.',
+        );
+      }
+    }
+
+    let registro = await this.prisma.inventario_itens.findFirst({
+      where: {
+        id: idOuItemId,
+        personagem_id: personagemId,
+      },
+      include: { itens: true },
+    });
+
+    if (!registro) {
+      registro = await this.prisma.inventario_itens.findFirst({
+        where: {
+          item_id: idOuItemId,
+          personagem_id: personagemId,
+        },
+        include: { itens: true },
+      });
+    }
+
+    if (!registro || !registro.itens) {
+      throw new NotFoundException(
+        'Item não encontrado no inventário deste personagem.',
+      );
+    }
+
+    const itemCatalogo = registro.itens;
+
+    if (itemCatalogo.tipo_efeito === 'EASTER_EGG') {
+      throw new BadRequestException(
+        'Itens lendários do tipo Easter Egg são itens comemorativos e não podem ser consumidos.',
+      );
+    }
+
+    const quantidadeAtual = registro.quantidade ?? 1;
+    if (quantidadeAtual <= 0) {
+      throw new BadRequestException(
+        'Quantidade do item no inventário insuficiente para uso.',
+      );
+    }
+
+    const efeito = itemCatalogo.tipo_efeito?.toUpperCase() ?? '';
+    const valorEfeito = itemCatalogo.valor_efeito ?? 0;
+
+    return this.prisma.$transaction(async (tx) => {
+      let detalheEfeito = '';
+      let vidaAtualizada = personagem.vida_atual ?? 100;
+
+      if (
+        efeito.includes('CURA') ||
+        efeito.includes('VIDA') ||
+        efeito.includes('HEAL')
+      ) {
+        const vidaMaxima = personagem.vida_maxima ?? 100;
+        const curaEfetiva = valorEfeito > 0 ? valorEfeito : 30;
+        vidaAtualizada = Math.min(vidaAtualizada + curaEfetiva, vidaMaxima);
+        const vidaRecuperada = vidaAtualizada - (personagem.vida_atual ?? 100);
+
+        await tx.personagens.update({
+          where: { id: personagemId },
+          data: { vida_atual: vidaAtualizada },
+        });
+
+        if (tentativaAtiva) {
+          const vidaRestanteTentativa = Math.min(
+            tentativaAtiva.vida_restante + vidaRecuperada,
+            vidaMaxima,
+          );
+          await tx.tentativas_sala.update({
+            where: { id: tentativaAtiva.id },
+            data: { vida_restante: vidaRestanteTentativa },
+          });
+        }
+
+        detalheEfeito = `Recuperou ${vidaRecuperada} ponto(s) de vida. Vida atual: ${vidaAtualizada}/${vidaMaxima}.`;
+      } else if (
+        efeito.includes('PULO') ||
+        efeito.includes('SKIP')
+      ) {
+        const pulosAdicionados = valorEfeito > 0 ? valorEfeito : 1;
+        if (tentativaAtiva) {
+          await tx.tentativas_sala.update({
+            where: { id: tentativaAtiva.id },
+            data: {
+              pulos_restantes:
+                (tentativaAtiva.pulos_restantes ?? 0) + pulosAdicionados,
+            },
+          });
+          detalheEfeito = `Adicionou ${pulosAdicionados} pulo(s) na tentativa ativa.`;
+        } else {
+          detalheEfeito = `Item de pulo ativado com sucesso (+${pulosAdicionados} pulo).`;
+        }
+      } else if (
+        efeito.includes('ELIMINA') ||
+        efeito.includes('CARTAS')
+      ) {
+        const qtdEliminar = valorEfeito > 0 ? valorEfeito : 2;
+        detalheEfeito = `Elimina até ${qtdEliminar} alternativas incorretas da questão atual.`;
+      } else {
+        detalheEfeito = `Efeito '${itemCatalogo.tipo_efeito}' ativado com valor ${valorEfeito}.`;
+      }
+
+      const quantidadeRestante = quantidadeAtual - 1;
+      let inventarioRestante = null;
+
+      if (quantidadeRestante > 0) {
+        inventarioRestante = await tx.inventario_itens.update({
+          where: { id: registro.id },
+          data: { quantidade: quantidadeRestante },
+          include: { itens: true },
+        });
+      } else {
+        await tx.inventario_itens.delete({
+          where: { id: registro.id },
+        });
+      }
+
+      return {
+        mensagem: `Item '${itemCatalogo.nome}' utilizado com sucesso.`,
+        efeito_aplicado: {
+          item_id: itemCatalogo.id,
+          nome: itemCatalogo.nome,
+          tipo_efeito: itemCatalogo.tipo_efeito,
+          valor_efeito: itemCatalogo.valor_efeito,
+          detalhe: detalheEfeito,
+        },
+        vida_atual: vidaAtualizada,
         quantidade_restante: quantidadeRestante,
         inventario: inventarioRestante,
       };
