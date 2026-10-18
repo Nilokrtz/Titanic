@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateRankDto } from './dto/create-rank.dto.js';
+import { UpdateRankDto } from './dto/update-rank.dto.js';
 import { FindRanksQueryDto } from './dto/find-ranks-query.dto.js';
 import type { Prisma } from '../generated/prisma/client.js'
 
@@ -68,6 +69,13 @@ export class RanksRepository {
       where: { xp_minimo },
     });
   }
+
+  async atualizar(id: number, data: UpdateRankDto) {
+    return this.prisma.ranks.update({
+      where: { id },
+      data,
+    });
+}
 
   }
 

@@ -54,8 +54,31 @@ export class RanksService {
     return rank;
   }
 
-  update(id: number, updateRankDto: UpdateRankDto) {
-    return `This action updates a #${id} rank`;
+  async update(id: number, updateRankDto: UpdateRankDto) {
+    await this.findOne(id); 
+
+    if(updateRankDto.nome !== undefined) { 
+      const rankComMesmoNome = await this.repository.buscarPorNome(updateRankDto.nome);
+      if (rankComMesmoNome && rankComMesmoNome.id !== id) {
+        throw new BadRequestException(`O nome "${updateRankDto.nome}" já está em uso.`);
+      }
+    }
+
+    if(updateRankDto.nivel_acesso !== undefined) {
+      const rankComMesmoNivel = await this.repository.buscarPorNivelAcesso(updateRankDto.nivel_acesso);
+      if (rankComMesmoNivel && rankComMesmoNivel.id !== id) {
+        throw new BadRequestException(`O nível de acesso "${updateRankDto.nivel_acesso}" já está em uso.`);
+      }
+    }
+
+    if(updateRankDto.xp_minimo !== undefined) {
+      const rankComMesmoXp = await this.repository.buscarPorXpMinimo(updateRankDto.xp_minimo);
+      if (rankComMesmoXp && rankComMesmoXp.id !== id) {
+        throw new BadRequestException(`O valor de XP "${updateRankDto.xp_minimo}" já está em uso.`);
+      }
+    }
+
+    return this.repository.atualizar(id, updateRankDto);
   }
 
   remove(id: number) {

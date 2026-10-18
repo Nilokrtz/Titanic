@@ -16,9 +16,9 @@ export class RanksController {
   constructor(private readonly ranksService: RanksService) {}
 
   @Post()
-  //@UseGuards(AutenticacaoGuard, RolesGuard)
-  //@Roles(tipo_perfil.ADMIN_PROFESSOR)
-  //@ApiBearerAuth('JWT-auth')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Cadastra um novo rank' })
   @ApiCreatedResponse({ description: 'Rank cadastrado com sucesso.' })
   @ApiBadRequestResponse({ description: 'Dados inválidos ou nome/nivel/xp já existente.' })
@@ -29,8 +29,8 @@ export class RanksController {
   }
 
   @Get()
-  //@UseGuards(AutenticacaoGuard)
-  //@ApiBearerAuth('JWT-auth')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar todos os ranks com paginação e filtros' })
   @ApiOkResponse({ description: 'Lista de ranks retornada com sucesso.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })  
@@ -39,8 +39,8 @@ export class RanksController {
   }
 
   @Get(':id')
-  //@UseGuards(AutenticacaoGuard)
-  //@ApiBearerAuth('JWT-auth')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Obter um rank pelo ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID do rank', example: 1 })
   @ApiOkResponse({ description: 'Rank retornado com sucesso.' })
@@ -51,8 +51,18 @@ export class RanksController {
   }
  
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRankDto: UpdateRankDto) {
-    return this.ranksService.update(+id, updateRankDto);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Atualiza os dados de um rank' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID do rank', example: 1 })
+  @ApiOkResponse({ description: 'Rank atualizado com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos ou nome/nivel/xp já existente.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  @ApiNotFoundResponse({ description: 'Rank não encontrado para o ID informado.' })
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateRankDto) {
+    return this.ranksService.update(id, updateDto);
   }
 
   @Delete(':id')
