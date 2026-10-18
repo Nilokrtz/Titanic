@@ -59,7 +59,8 @@ export class EspecializacoesRepository {
             where: { nome },
         });
     }
-    
+
+
 } 
 
 

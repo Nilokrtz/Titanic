@@ -32,8 +32,12 @@ export class EspecializacoesService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} especializacoe`;
+  async findOne(id: number) {
+    const especializacoe = await this.repository.buscarPorId(id);
+    if(!especializacoe) {
+      throw new NotFoundException(`Especialização com o ID ${id} não foi encontrada.`);
+    }
+    return especializacoe;
   }
 
   update(id: number, updateEspecializacoeDto: UpdateEspecializacoeDto) {

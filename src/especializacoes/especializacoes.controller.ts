@@ -38,8 +38,15 @@ export class EspecializacoesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.especializacoesService.findOne(+id);
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Obter uma especialização pelo ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da especialização', example: 1 })
+  @ApiOkResponse({ description: 'Especialização retornada com sucesso.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiNotFoundResponse({ description: 'Especialização não encontrada para o ID informado.' })
+  findById(@Param('id', ParseIntPipe) id: number) {
+    return this.especializacoesService.findOne(id);
   }
 
   @Patch(':id')
