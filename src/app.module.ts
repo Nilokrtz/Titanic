@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
+import { PrometheusModule } from 'nestjs-prometheus';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter.js';
@@ -16,7 +17,11 @@ import { TentativasSalaModule } from './tentativas_sala/tentativas_sala.module.j
 import { EspecializacoesModule } from './especializacoes/especializacoes.module.js';
 
 @Module({
-  imports: [AuthModule, UsuariosModule, PerfisModule, RanksModule, PersonagensModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule, EspecializacoesModule],
+  imports: [
+    PrometheusModule.register({
+      path: '/metrics',
+    }),
+    AuthModule, UsuariosModule, PerfisModule, RanksModule, PersonagensModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule, EspecializacoesModule],
   controllers: [AppController],
   providers: [AppService, { provide: APP_FILTER, useClass: PrismaExceptionFilter }],
 })
