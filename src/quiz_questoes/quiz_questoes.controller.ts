@@ -81,4 +81,18 @@ export class QuizQuestoesController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.quizQuestoesService.remove(id);
   }
+
+  @Get(':id/jogar')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Obtém a questão formatada para o jogador (3 opções para especialista, 4 para normal)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da questão' })
+  @ApiOkResponse({ description: 'Questão formatada retornada com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Questão não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  obterParaJogar(
+  @Param('id', ParseIntPipe) id: number,
+  @Query('especializacao') especializacao?: string) {
+    return this.quizQuestoesService.obterQuestaoFormatada(id, especializacao);
+  }
 }

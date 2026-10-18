@@ -85,7 +85,8 @@ export class QuizQuestoesService {
       (alt) => alt.chave !== alternativaCorreta.chave,
     );
 
-    const incorretasSelecionadas = alternativasIncorretas.slice(0, 2);
+    const incorretasEmbaralhadas = [...alternativasIncorretas].sort(() => Math.random() - 0.5);
+    const incorretasSelecionadas = incorretasEmbaralhadas.slice(0, 2);
 
     const tresOpcoesEmbaralhadas = [alternativaCorreta, ...incorretasSelecionadas].sort(
       () => Math.random() - 0.5,
