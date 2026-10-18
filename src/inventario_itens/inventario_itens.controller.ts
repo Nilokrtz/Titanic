@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, Query, UseGuards, Req, ParseIntPipe, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Query, UseGuards, Req, ParseIntPipe } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
@@ -9,10 +9,7 @@ import { UsarItemDto } from './dto/usar-item.dto.js';
 import { InventarioItensService } from './inventario_itens.service.js';
 
 @ApiTags('Inventário')
-@Controller([
-  'personagens/:personagemId/inventario',
-  'personagens/:personagenId/inventario',
-])
+@Controller('personagens/:personagemId/inventario')
 export class InventarioItensController {
   constructor(
     private readonly inventarioItensService: InventarioItensService,
@@ -27,14 +24,7 @@ export class InventarioItensController {
   @ApiParam({
     name: 'personagemId',
     type: Number,
-    required: false,
     description: 'ID do personagem',
-  })
-  @ApiParam({
-    name: 'personagenId',
-    type: Number,
-    required: false,
-    description: 'ID do personagem (alias)',
   })
   @ApiCreatedResponse({ description: 'Item comprado com sucesso.' })
   @ApiBadRequestResponse({
@@ -47,16 +37,10 @@ export class InventarioItensController {
   })
   @ApiNotFoundResponse({ description: 'Personagem ou item não encontrado.' })
   comprarItem(
-    @Param('personagemId') paramPersonagemId: string | undefined,
-    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Param('personagemId', ParseIntPipe) personagemId: number,
     @Body() comprarItemDto: ComprarItemDto,
     @Req() requisicao: Request & { usuarioId: number },
   ) {
-    const rawId = paramPersonagemId ?? paramPersonagenId;
-    const personagemId = Number(rawId);
-    if (!rawId || isNaN(personagemId)) {
-      throw new BadRequestException('ID do personagem inválido.');
-    }
 
     return this.inventarioItensService.comprarItem(
       personagemId,
@@ -74,14 +58,7 @@ export class InventarioItensController {
   @ApiParam({
     name: 'personagemId',
     type: Number,
-    required: false,
     description: 'ID do personagem',
-  })
-  @ApiParam({
-    name: 'personagenId',
-    type: Number,
-    required: false,
-    description: 'ID do personagem (alias)',
   })
   @ApiOkResponse({ description: 'Item vendido com sucesso (reembolso de 90%).' })
   @ApiBadRequestResponse({
@@ -96,16 +73,10 @@ export class InventarioItensController {
     description: 'Personagem ou item no inventário não encontrado.',
   })
   venderItem(
-    @Param('personagemId') paramPersonagemId: string | undefined,
-    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Param('personagemId', ParseIntPipe) personagemId: number,
     @Body() venderItemDto: VenderItemDto,
     @Req() requisicao: Request & { usuarioId: number },
   ) {
-    const rawId = paramPersonagemId ?? paramPersonagenId;
-    const personagemId = Number(rawId);
-    if (!rawId || isNaN(personagemId)) {
-      throw new BadRequestException('ID do personagem inválido.');
-    }
 
     return this.inventarioItensService.venderItem(
       personagemId,
@@ -123,14 +94,7 @@ export class InventarioItensController {
   @ApiParam({
     name: 'personagemId',
     type: Number,
-    required: false,
     description: 'ID do personagem',
-  })
-  @ApiParam({
-    name: 'personagenId',
-    type: Number,
-    required: false,
-    description: 'ID do personagem (alias)',
   })
   @ApiParam({
     name: 'id',
@@ -150,17 +114,11 @@ export class InventarioItensController {
     description: 'Personagem ou item não encontrado no inventário.',
   })
   usarItem(
-    @Param('personagemId') paramPersonagemId: string | undefined,
-    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Param('personagemId', ParseIntPipe) personagemId: number,
     @Param('id', ParseIntPipe) id: number,
     @Req() requisicao: Request & { usuarioId: number },
     @Body() usarItemDto?: UsarItemDto,
   ) {
-    const rawId = paramPersonagemId ?? paramPersonagenId;
-    const personagemId = Number(rawId);
-    if (!rawId || isNaN(personagemId)) {
-      throw new BadRequestException('ID do personagem inválido.');
-    }
 
     return this.inventarioItensService.usarItem(
       personagemId,
@@ -180,15 +138,9 @@ export class InventarioItensController {
   @ApiOkResponse({ description: 'Itens da mochila listados com sucesso.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   listarMochila(
-    @Param('personagemId') paramPersonagemId: string | undefined,
-    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Param('personagemId', ParseIntPipe) personagemId: number,
     @Query() filtros: FindInventarioQueryDto,
   ) {
-    const rawId = paramPersonagemId ?? paramPersonagenId;
-    const personagemId = Number(rawId);
-    if (!rawId || isNaN(personagemId)) {
-      throw new BadRequestException('ID do personagem inválido.');
-    }
     return this.inventarioItensService.listarMochila(personagemId, filtros);
   }
 
@@ -203,15 +155,9 @@ export class InventarioItensController {
   @ApiUnauthorizedResponse({ description: 'Token ausente ou invalido.' })
   @ApiNotFoundResponse({ description: 'Item nao encontrado no inventario.' })
   findOne(
-    @Param('personagemId') paramPersonagemId: string | undefined,
-    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Param('personagemId', ParseIntPipe) personagemId: number,
     @Param('id', ParseIntPipe) id: number,
   ) {
-     const rawId = paramPersonagemId ?? paramPersonagenId;
-     const personagemId = Number(rawId);
-     if (!rawId || isNaN(personagemId)) {
-       throw new BadRequestException('ID do personagem invalido.');
-     }
      return this.inventarioItensService.findOne(personagemId, id);
   }
 
@@ -227,15 +173,9 @@ export class InventarioItensController {
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiNotFoundResponse({ description: 'Item não encontrado no inventário.' })
   descartarItem(
-    @Param('personagemId') paramPersonagemId: string | undefined,
-    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Param('personagemId', ParseIntPipe) personagemId: number,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const rawId = paramPersonagemId ?? paramPersonagenId;
-    const personagemId = Number(rawId);
-    if (!rawId || isNaN(personagemId)) {
-      throw new BadRequestException('ID do personagem inválido.');
-    }
     return this.inventarioItensService.descartarItem(personagemId, id);
   }
 }
