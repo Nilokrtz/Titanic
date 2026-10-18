@@ -20,6 +20,12 @@ export class TentativasSalaRepository {
     });
   }
 
+  async buscarQuestaoPorId(questaoId: number) {
+    return this.prisma.quiz_questoes.findUnique({
+      where: { id: questaoId },
+    });
+  }
+
   async criar(data: CreateTentativasSalaDto) {
     return this.prisma.tentativas_sala.create({
       data: {
@@ -77,7 +83,7 @@ export class TentativasSalaRepository {
   async buscarPorId(id: number) {
     return this.prisma.tentativas_sala.findUnique({
       where: { id },
-      include: { personagens: true, salas_desafio: true, quiz_questoes: true },
+      include: { personagens: true, salas_desafio: { include: { ranks: true } }, quiz_questoes: true}
     });
   }
 
@@ -92,13 +98,13 @@ export class TentativasSalaRepository {
       },
     });
   }
-  
+
   async remover(id: number) {
     return this.prisma.tentativas_sala.delete({
       where: { id },
     });
   }
-  
+
   async buscarPersonagemCompleto(personagemId: number) {
     return this.prisma.personagens.findUnique({
       where: { id: personagemId },
@@ -135,12 +141,33 @@ export class TentativasSalaRepository {
     });
   }
 
-  async atualizarTentativa(tentativaId: number, data: { status?: 'EM_ANDAMENTO' | 'VITORIA' | 'DERROTA'; vida_restante?: number; erros?: number; acertos?: number }) {
+  async recompensarPersonagem(personagemId: number, xpGanha: number, moedasGanhas: number) {
+    return this.prisma.personagens.update({
+      where: { id: personagemId },
+      data: {
+        xp_atual: { increment: xpGanha },
+        moedas: { increment: moedasGanhas },
+      },
+    });
+  }
+
+  async atualizarTentativa(
+    tentativaId: number,
+    data: {
+      status?: 'EM_ANDAMENTO' | 'VITORIA' | 'DERROTA';
+      vida_restante?: number;
+      erros?: { increment: number } | number;
+      acertos?: { increment: number } | number;
+      questao_atual_id?: number;
+    },
+  ) {
+    const isFinalizado = data.status && data.status !== 'EM_ANDAMENTO';
+
     return this.prisma.tentativas_sala.update({
       where: { id: tentativaId },
       data: {
         ...data,
-        ...(data.status && data.status !== 'EM_ANDAMENTO' ? { finalizado_em: new Date() } : {}),
+        ...(isFinalizado ? { finalizado_em: new Date() } : {}),
       },
     });
   }
@@ -155,17 +182,17 @@ export class TentativasSalaRepository {
   }
 
   async buscarVitoriaNoBossFinal(personagemId: number) {
-  return this.prisma.tentativas_sala.findFirst({
-    where: {
-      personagem_id: personagemId,
-      status: 'VITORIA',
-      salas_desafio: {
-        nome: {
-          contains: 'Boss_Final',
-          mode: 'insensitive',
+    return this.prisma.tentativas_sala.findFirst({
+      where: {
+        personagem_id: personagemId,
+        status: 'VITORIA',
+        salas_desafio: {
+          nome: {
+            contains: 'Boss_Final',
+            mode: 'insensitive',
+          },
         },
       },
-    },
-  });
+    });
   }
 }
