@@ -84,6 +84,16 @@ async function main(){
     },
   })
 
+  const usuarioAdmin = await prisma.usuarios.upsert({
+    where: { email: 'admin@cefet.br' },
+    update: {},
+    create: {
+      email: 'admin@cefet.br',
+      senha: 'senhaadmin', 
+      perfil_id: perfilAdmin.id,
+    },
+  });
+
   const personagemHeroi = await prisma.personagens.upsert({
     where: { nome: 'DevMaster' },
     update: {},

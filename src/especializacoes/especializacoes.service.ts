@@ -1,11 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { CreateEspecializacoeDto } from './dto/create-especializacoe.dto.js';
-import { UpdateEspecializacoeDto } from './dto/update-especializacoe.dto.js';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { EspecializacoesRepository } from './especializacoes.repository.js';
+import { CreateEspecializacoeDto } from './dto/create-especializacoes.dto.js';
+import { UpdateEspecializacoeDto } from './dto/update-especializacoes.dto.js';
 
 @Injectable()
 export class EspecializacoesService {
-  create(createEspecializacoeDto: CreateEspecializacoeDto) {
-    return 'This action adds a new especializacoe';
+  constructor(private readonly repository: EspecializacoesRepository) {}
+
+  async create(dados: CreateEspecializacoeDto) {
+    const nomeExiste = await this.repository.buscarPorNome(dados.nome);
+    if(nomeExiste) {
+      throw new BadRequestException(`A especialização "${dados.nome}" já está em uso.`);
+    }
+    return this.repository.criar(dados);
   }
 
   findAll() {
