@@ -5,19 +5,17 @@ import {
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { tipo_perfil } from '../../generated/prisma/client.js';
-import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuthRepository } from '../auth.repository.js';
 import { RolesGuard } from './roles.guard.js';
 
 describe('RolesGuard', () => {
   const buscarUsuario = vi.fn();
   const buscarRoles = vi.fn();
-  const prisma = {
-    usuarios: { findUnique: buscarUsuario },
-  } as unknown as PrismaService;
+  const repository = { buscarPerfil: buscarUsuario } as unknown as AuthRepository;
   const reflector = {
     getAllAndOverride: buscarRoles,
   } as unknown as Reflector;
-  const guard = new RolesGuard(reflector, prisma);
+  const guard = new RolesGuard(reflector, repository);
 
   function contexto(usuarioId?: number): ExecutionContext {
     return {
@@ -39,10 +37,7 @@ describe('RolesGuard', () => {
     });
 
     await expect(guard.canActivate(contexto(1))).resolves.toBe(true);
-    expect(buscarUsuario).toHaveBeenCalledWith({
-      where: { id: 1 },
-      select: { perfis: { select: { nome: true } } },
-    });
+    expect(buscarUsuario).toHaveBeenCalledWith(1);
   });
 
   it('rejeita requisição sem usuário autenticado', async () => {

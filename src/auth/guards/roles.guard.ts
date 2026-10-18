@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { tipo_perfil } from '../../generated/prisma/client.js';
-import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuthRepository } from '../auth.repository.js';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
 
 type AuthenticatedRequest = {
@@ -18,7 +18,7 @@ type AuthenticatedRequest = {
 export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
+    private readonly repository: AuthRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -36,10 +36,7 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException('Usuário não autenticado.');
     }
 
-    const usuario = await this.prisma.usuarios.findUnique({
-      where: { id: request.usuarioId },
-      select: { perfis: { select: { nome: true } } },
-    });
+    const usuario = await this.repository.buscarPerfil(request.usuarioId);
 
     if (!usuario) {
       throw new UnauthorizedException('Sessão inválida.');

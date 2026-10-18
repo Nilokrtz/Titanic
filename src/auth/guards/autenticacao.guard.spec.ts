@@ -1,17 +1,15 @@
 import { UnauthorizedException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuthRepository } from '../auth.repository.js';
 import { AutenticacaoGuard } from './autenticacao.guard.js';
 
 describe('AutenticacaoGuard', () => {
   const verificarToken = vi.fn();
   const buscarUsuario = vi.fn();
   const jwtService = { verifyAsync: verificarToken } as unknown as JwtService;
-  const prisma = {
-    usuarios: { findUnique: buscarUsuario },
-  } as unknown as PrismaService;
-  const guard = new AutenticacaoGuard(jwtService, prisma);
+  const repository = { buscarSessao: buscarUsuario } as unknown as AuthRepository;
+  const guard = new AutenticacaoGuard(jwtService, repository);
 
   function contexto() {
     const requisicao = { headers: { authorization: 'Bearer token' } };

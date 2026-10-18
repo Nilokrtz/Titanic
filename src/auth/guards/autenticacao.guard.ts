@@ -6,13 +6,13 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
-import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuthRepository } from '../auth.repository.js';
 
 @Injectable()
 export class AutenticacaoGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly prisma: PrismaService,
+    private readonly repository: AuthRepository,
   ) {}
 
   async canActivate(contexto: ExecutionContext): Promise<boolean> {
@@ -41,10 +41,7 @@ export class AutenticacaoGuard implements CanActivate {
       throw new UnauthorizedException('Token inválido.');
     }
 
-    const usuario = await this.prisma.usuarios.findUnique({
-      where: { id: conteudo.sub },
-      select: { excluido_em: true },
-    });
+    const usuario = await this.repository.buscarSessao(conteudo.sub);
 
     if (!usuario || usuario.excluido_em) {
       throw new UnauthorizedException('Sessão inválida.');
