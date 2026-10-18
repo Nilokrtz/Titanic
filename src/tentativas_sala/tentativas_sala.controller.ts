@@ -94,4 +94,14 @@ export class TentativasSalaController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.tentativasSalaService.remove(id);
   }
+
+  @Get('personagem/:personagemId/flawless')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Verifica se o personagem conquistou o Easter Egg de Zero Erros' })
+  @ApiParam({ name: 'personagemId', type: Number, description: 'ID do personagem' })
+  @ApiOkResponse({ description: 'Resultado do Easter Egg retornado com sucesso.' })
+  verificarFlawless(@Param('personagemId', ParseIntPipe) personagemId: number) {
+    return this.tentativasSalaService.verificarEasterEggFlawless(personagemId);
+  }
 }

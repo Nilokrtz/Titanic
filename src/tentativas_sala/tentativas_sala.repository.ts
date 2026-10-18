@@ -153,4 +153,19 @@ export class TentativasSalaRepository {
 
     return resultado._sum.erros ?? 0;
   }
+
+  async buscarVitoriaNoBossFinal(personagemId: number) {
+  return this.prisma.tentativas_sala.findFirst({
+    where: {
+      personagem_id: personagemId,
+      status: 'VITORIA',
+      salas_desafio: {
+        nome: {
+          contains: 'Boss_Final',
+          mode: 'insensitive',
+        },
+      },
+    },
+  });
+  }
 }

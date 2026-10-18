@@ -129,6 +129,15 @@ export class TentativasSalaService {
   }
 
   async verificarEasterEggFlawless(personagemId: number) {
+    const vitoriaBoss = await this.repository.buscarVitoriaNoBossFinal(personagemId);
+
+    if (!vitoriaBoss) {
+      return {
+        conquistado: false,
+        mensagem: 'O personagem ainda não derrotou o Boss Final.',
+      };
+    }
+
     const totalErros = await this.repository.somarTotalErrosPersonagem(personagemId);
 
     if (totalErros === 0) {
@@ -138,6 +147,9 @@ export class TentativasSalaService {
       };
     }
 
-    return { conquistado: false };
+    return { 
+      conquistado: false,
+      mensagem: 'Boss derrotado, mas o personagem sofreu erros ao longo da jornada.'
+     };
   }
 }
