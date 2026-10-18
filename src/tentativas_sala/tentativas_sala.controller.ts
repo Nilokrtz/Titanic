@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get,Patch, Query, ParseIntPipe, Param } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get,Patch, Query, ParseIntPipe, Param, Delete } from '@nestjs/common';
 import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiNotFoundResponse,ApiOkResponse,ApiOperation,ApiParam,ApiTags,ApiUnauthorizedResponse,ApiForbiddenResponse} from '@nestjs/swagger';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { TentativasSalaService } from './tentativas_sala.service.js';
@@ -63,5 +63,19 @@ export class TentativasSalaController {
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
   update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: CreateTentativasSalaDto) {
     return this.tentativasSalaService.update(id, updateDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Remove um registro de tentativa (Apenas Professores/Admins)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da tentativa' })
+  @ApiOkResponse({ description: 'Tentativa removida com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Tentativa não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.tentativasSalaService.remove(id);
   }
 }

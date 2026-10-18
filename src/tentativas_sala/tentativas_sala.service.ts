@@ -56,4 +56,10 @@ export class TentativasSalaService {
 
     return this.repository.atualizar(id, updateDto);
   }
+  
+  async remove(id: number) {
+    await this.findById(id);
+    await this.repository.remover(id);
+    return { mensagem: 'Tentativa de sala removida com sucesso.' };
+  }
 }

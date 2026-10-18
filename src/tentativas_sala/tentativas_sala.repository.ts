@@ -92,4 +92,10 @@ export class TentativasSalaRepository {
       },
     });
   }
+  
+  async remover(id: number) {
+    return this.prisma.tentativas_sala.delete({
+      where: { id },
+    });
+  }
 }
