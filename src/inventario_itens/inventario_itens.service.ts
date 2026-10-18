@@ -1,16 +1,14 @@
 import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { Prisma, tipo_perfil } from '../generated/prisma/client.js';
-import { PrismaService } from '../prisma/prisma.service.js';
-import { CreateInventarioItenDto } from './dto/create-inventario_iten.dto.js';
+import { tipo_perfil } from '../generated/prisma/client.js';
+import { InventarioItensRepository } from './inventario_itens.repository.js';
 import { FindInventarioQueryDto } from './dto/find-inventario-query.dto.js';
-import { UpdateInventarioItenDto } from './dto/update-inventario_iten.dto.js';
 import { ComprarItemDto } from './dto/comprar-item.dto.js';
 import { VenderItemDto } from './dto/vender-item.dto.js';
 import { UsarItemDto } from './dto/usar-item.dto.js';
 
 @Injectable()
 export class InventarioItensService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly repository: InventarioItensRepository) {}
 
   async comprarItem(
     personagemId: number,
@@ -35,21 +33,14 @@ export class InventarioItensService {
       );
     }
 
-    const personagem = await this.prisma.personagens.findUnique({
-      where: { id: personagemId },
-    });
+    const personagem = await this.repository.buscarPersonagemPorId(personagemId);
 
     if (!personagem) {
       throw new NotFoundException('Personagem não encontrado.');
     }
 
     if (usuarioId !== undefined) {
-      const usuario = await this.prisma.usuarios.findUnique({
-        where: { id: usuarioId },
-        select: {
-          perfis: { select: { nome: true } },
-        },
-      });
+      const usuario = await this.repository.buscarUsuarioComPerfil(usuarioId);
 
       const isOwner = personagem.usuario_id === usuarioId;
       const isAdmin = usuario?.perfis?.nome === tipo_perfil.ADMIN_PROFESSOR;
@@ -61,9 +52,7 @@ export class InventarioItensService {
       }
     }
 
-    const item = await this.prisma.itens.findUnique({
-      where: { id: itemId },
-    });
+    const item = await this.repository.buscarItemPorId(itemId);
 
     if (!item) {
       throw new NotFoundException('Item não encontrado na loja.');
@@ -76,83 +65,53 @@ export class InventarioItensService {
     }
 
     const custoTotal = item.preco_moedas * quantidade;
+    const saldoAtual = personagem.moedas ?? 0;
 
-    return this.prisma.$transaction(async (tx) => {
-      const personagemTx = await tx.personagens.findUnique({
-        where: { id: personagemId },
-      });
-
-      if (!personagemTx) {
-        throw new NotFoundException('Personagem não encontrado.');
-      }
-
-      const saldoAtual = personagemTx.moedas ?? 0;
-      if (saldoAtual < custoTotal) {
-        throw new BadRequestException(
-          `Saldo insuficiente. O item custa ${custoTotal} moeda(s), mas o personagem possui apenas ${saldoAtual} moeda(s). O saldo não pode ficar negativo.`,
-        );
-      }
-
-      const inventarioAtual = await tx.inventario_itens.findMany({
-        where: { personagem_id: personagemId },
-      });
-
-      const totalItensAtuais = inventarioAtual.reduce(
-        (acc, curr) => acc + (curr.quantidade ?? 1),
-        0,
+    if (saldoAtual < custoTotal) {
+      throw new BadRequestException(
+        `Saldo insuficiente. O item custa ${custoTotal} moeda(s), mas o personagem possui apenas ${saldoAtual} moeda(s). O saldo não pode ficar negativo.`,
       );
+    }
 
-      if (totalItensAtuais + quantidade > 2) {
-        throw new BadRequestException(
-          `O personagem só pode carregar no máximo 2 itens no inventário. O inventário atual já possui ${totalItensAtuais} item(ns).`,
-        );
-      }
+    const inventarioAtual = await this.repository.listarItensDoPersonagem(personagemId);
 
-      const personagemAtualizado = await tx.personagens.update({
-        where: { id: personagemId },
-        data: {
-          moedas: { decrement: custoTotal },
-        },
-      });
+    const totalItensAtuais = inventarioAtual.reduce(
+      (acc, curr) => acc + (curr.quantidade ?? 1),
+      0,
+    );
 
-      const itemExistente = inventarioAtual.find(
-        (inv) => inv.item_id === itemId,
+    if (totalItensAtuais + quantidade > 2) {
+      throw new BadRequestException(
+        `O personagem só pode carregar no máximo 2 itens no inventário. O inventário atual já possui ${totalItensAtuais} item(ns).`,
       );
+    }
 
-      let itemInventario;
-      if (itemExistente) {
-        itemInventario = await tx.inventario_itens.update({
-          where: { id: itemExistente.id },
-          data: {
-            quantidade: (itemExistente.quantidade ?? 1) + quantidade,
-          },
-          include: { itens: true },
-        });
-      } else {
-        itemInventario = await tx.inventario_itens.create({
-          data: {
-            personagem_id: personagemId,
-            item_id: itemId,
-            quantidade,
-          },
-          include: { itens: true },
-        });
-      }
+    const itemExistente = inventarioAtual.find(
+      (inv) => inv.item_id === itemId,
+    );
 
-      return {
-        mensagem: 'Item comprado com sucesso.',
-        item: {
-          id: item.id,
-          nome: item.nome,
-          preco_unitario: item.preco_moedas,
-          quantidade_comprada: quantidade,
-          custo_total: custoTotal,
-        },
-        moedas_atuais: personagemAtualizado.moedas,
-        total_itens_inventario: totalItensAtuais + quantidade,
-        inventario: itemInventario,
-      };
-    });
+    const resultado = await this.repository.salvarCompraTransacao(
+      personagemId,
+      item.id,
+      quantidade,
+      custoTotal,
+      itemExistente?.id,
+      itemExistente?.quantidade ?? undefined,
+    );
+
+    return {
+      mensagem: 'Item comprado com sucesso.',
+      item: {
+        id: item.id,
+        nome: item.nome,
+        preco_unitario: item.preco_moedas,
+        quantidade_comprada: quantidade,
+        custo_total: custoTotal,
+      },
+      moedas_atuais: resultado.moedas_atuais,
+      total_itens_inventario: totalItensAtuais + quantidade,
+      inventario: resultado.inventario,
+    };
   }
 
   async venderItem(
@@ -179,19 +138,14 @@ export class InventarioItensService {
       );
     }
 
-    const personagem = await this.prisma.personagens.findUnique({
-      where: { id: personagemId },
-    });
+    const personagem = await this.repository.buscarPersonagemPorId(personagemId);
 
     if (!personagem) {
       throw new NotFoundException('Personagem não encontrado.');
     }
 
     if (usuarioId !== undefined) {
-      const usuario = await this.prisma.usuarios.findUnique({
-        where: { id: usuarioId },
-        select: { perfis: { select: { nome: true } } },
-      });
+      const usuario = await this.repository.buscarUsuarioComPerfil(usuarioId);
 
       const isOwner = personagem.usuario_id === usuarioId;
       const isAdmin = usuario?.perfis?.nome === tipo_perfil.ADMIN_PROFESSOR;
@@ -206,33 +160,15 @@ export class InventarioItensService {
     let registro = null;
 
     if (inventarioId) {
-      registro = await this.prisma.inventario_itens.findFirst({
-        where: {
-          id: inventarioId,
-          personagem_id: personagemId,
-        },
-        include: { itens: true },
-      });
+      registro = await this.repository.buscarPorIdEPersonagem(inventarioId, personagemId);
     }
 
     if (!registro && itemId) {
-      registro = await this.prisma.inventario_itens.findFirst({
-        where: {
-          item_id: itemId,
-          personagem_id: personagemId,
-        },
-        include: { itens: true },
-      });
+      registro = await this.repository.buscarPorItemEPersonagem(itemId, personagemId);
     }
 
     if (!registro && inventarioId) {
-      registro = await this.prisma.inventario_itens.findFirst({
-        where: {
-          item_id: inventarioId,
-          personagem_id: personagemId,
-        },
-        include: { itens: true },
-      });
+      registro = await this.repository.buscarPorItemEPersonagem(inventarioId, personagemId);
     }
 
     if (!registro || !registro.itens) {
@@ -259,45 +195,29 @@ export class InventarioItensService {
     const precoOriginalUnitario = itemCatalogo.preco_moedas;
     const valorUnitarioVenda = Math.floor(precoOriginalUnitario * 0.9);
     const valorTotalRecebido = valorUnitarioVenda * quantidade;
+    const quantidadeRestante = quantidadeAtual - quantidade;
 
-    return this.prisma.$transaction(async (tx) => {
-      const personagemAtualizado = await tx.personagens.update({
-        where: { id: personagemId },
-        data: {
-          moedas: { increment: valorTotalRecebido },
-        },
-      });
+    const resultado = await this.repository.salvarVendaTransacao(
+      personagemId,
+      registro.id,
+      quantidadeRestante,
+      valorTotalRecebido,
+    );
 
-      const quantidadeRestante = quantidadeAtual - quantidade;
-      let inventarioRestante = null;
-
-      if (quantidadeRestante > 0) {
-        inventarioRestante = await tx.inventario_itens.update({
-          where: { id: registro.id },
-          data: { quantidade: quantidadeRestante },
-          include: { itens: true },
-        });
-      } else {
-        await tx.inventario_itens.delete({
-          where: { id: registro.id },
-        });
-      }
-
-      return {
-        mensagem: 'Venda realizada com sucesso com aplicação de 10% de taxa.',
-        item_vendido: {
-          id: itemCatalogo.id,
-          nome: itemCatalogo.nome,
-          preco_original: precoOriginalUnitario,
-          valor_unitario_venda: valorUnitarioVenda,
-          quantidade_vendida: quantidade,
-          valor_total_recebido: valorTotalRecebido,
-        },
-        moedas_atuais: personagemAtualizado.moedas,
-        quantidade_restante: quantidadeRestante,
-        inventario: inventarioRestante,
-      };
-    });
+    return {
+      mensagem: 'Venda realizada com sucesso com aplicação de 10% de taxa.',
+      item_vendido: {
+        id: itemCatalogo.id,
+        nome: itemCatalogo.nome,
+        preco_original: precoOriginalUnitario,
+        valor_unitario_venda: valorUnitarioVenda,
+        quantidade_vendida: quantidade,
+        valor_total_recebido: valorTotalRecebido,
+      },
+      moedas_atuais: resultado.moedas_atuais,
+      quantidade_restante: quantidadeRestante,
+      inventario: resultado.inventario,
+    };
   }
 
   async usarItem(
@@ -306,19 +226,14 @@ export class InventarioItensService {
     usuarioId?: number,
     usarItemDto?: UsarItemDto,
   ) {
-    const personagem = await this.prisma.personagens.findUnique({
-      where: { id: personagemId },
-    });
+    const personagem = await this.repository.buscarPersonagemPorId(personagemId);
 
     if (!personagem) {
       throw new NotFoundException('Personagem não encontrado.');
     }
 
     if (usuarioId !== undefined) {
-      const usuario = await this.prisma.usuarios.findUnique({
-        where: { id: usuarioId },
-        select: { perfis: { select: { nome: true } } },
-      });
+      const usuario = await this.repository.buscarUsuarioComPerfil(usuarioId);
 
       const isOwner = personagem.usuario_id === usuarioId;
       const isAdmin = usuario?.perfis?.nome === tipo_perfil.ADMIN_PROFESSOR;
@@ -336,25 +251,15 @@ export class InventarioItensService {
       );
     }
 
-    const tentativaAtiva = await this.prisma.tentativas_sala.findFirst({
-      where: {
-        personagem_id: personagemId,
-        status: 'EM_ANDAMENTO',
-        ...(usarItemDto?.tentativa_id
-          ? { id: usarItemDto.tentativa_id }
-          : {}),
-      },
-      include: {
-        salas_desafio: true,
-      },
-    });
+    const tentativaAtiva = await this.repository.buscarTentativaAtivaDoPersonagem(
+      personagemId,
+      usarItemDto?.tentativa_id,
+    );
 
     const salaVerificar =
       tentativaAtiva?.salas_desafio ??
       (usarItemDto?.sala_id
-        ? await this.prisma.salas_desafio.findUnique({
-            where: { id: usarItemDto.sala_id },
-          })
+        ? await this.repository.buscarSalaPorId(usarItemDto.sala_id)
         : null);
 
     if (salaVerificar) {
@@ -373,22 +278,10 @@ export class InventarioItensService {
       }
     }
 
-    let registro = await this.prisma.inventario_itens.findFirst({
-      where: {
-        id: idOuItemId,
-        personagem_id: personagemId,
-      },
-      include: { itens: true },
-    });
+    let registro = await this.repository.buscarPorIdEPersonagem(idOuItemId, personagemId);
 
     if (!registro) {
-      registro = await this.prisma.inventario_itens.findFirst({
-        where: {
-          item_id: idOuItemId,
-          personagem_id: personagemId,
-        },
-        include: { itens: true },
-      });
+      registro = await this.repository.buscarPorItemEPersonagem(idOuItemId, personagemId);
     }
 
     if (!registro || !registro.itens) {
@@ -415,161 +308,98 @@ export class InventarioItensService {
     const efeito = itemCatalogo.tipo_efeito?.toUpperCase() ?? '';
     const valorEfeito = itemCatalogo.valor_efeito ?? 0;
 
-    return this.prisma.$transaction(async (tx) => {
-      let detalheEfeito = '';
-      let vidaAtualizada = personagem.vida_atual ?? 100;
+    let detalheEfeito = '';
+    let vidaAtualizada = personagem.vida_atual ?? 100;
+    let novaVidaPersonagem: number | undefined;
+    let novaVidaTentativa: number | undefined;
+    let novosPulosTentativa: number | undefined;
 
-      if (
-        efeito.includes('CURA') ||
-        efeito.includes('VIDA') ||
-        efeito.includes('HEAL')
-      ) {
-        const vidaMaxima = personagem.vida_maxima ?? 100;
-        const curaEfetiva = valorEfeito > 0 ? valorEfeito : 30;
-        vidaAtualizada = Math.min(vidaAtualizada + curaEfetiva, vidaMaxima);
-        const vidaRecuperada = vidaAtualizada - (personagem.vida_atual ?? 100);
+    if (
+      efeito.includes('CURA') ||
+      efeito.includes('VIDA') ||
+      efeito.includes('HEAL')
+    ) {
+      const vidaMaxima = personagem.vida_maxima ?? 100;
+      const curaEfetiva = valorEfeito > 0 ? valorEfeito : 30;
+      vidaAtualizada = Math.min(vidaAtualizada + curaEfetiva, vidaMaxima);
+      const vidaRecuperada = vidaAtualizada - (personagem.vida_atual ?? 100);
+      novaVidaPersonagem = vidaAtualizada;
 
-        await tx.personagens.update({
-          where: { id: personagemId },
-          data: { vida_atual: vidaAtualizada },
-        });
-
-        if (tentativaAtiva) {
-          const vidaRestanteTentativa = Math.min(
-            tentativaAtiva.vida_restante + vidaRecuperada,
-            vidaMaxima,
-          );
-          await tx.tentativas_sala.update({
-            where: { id: tentativaAtiva.id },
-            data: { vida_restante: vidaRestanteTentativa },
-          });
-        }
-
-        detalheEfeito = `Recuperou ${vidaRecuperada} ponto(s) de vida. Vida atual: ${vidaAtualizada}/${vidaMaxima}.`;
-      } else if (
-        efeito.includes('PULO') ||
-        efeito.includes('SKIP')
-      ) {
-        const pulosAdicionados = valorEfeito > 0 ? valorEfeito : 1;
-        if (tentativaAtiva) {
-          await tx.tentativas_sala.update({
-            where: { id: tentativaAtiva.id },
-            data: {
-              pulos_restantes:
-                (tentativaAtiva.pulos_restantes ?? 0) + pulosAdicionados,
-            },
-          });
-          detalheEfeito = `Adicionou ${pulosAdicionados} pulo(s) na tentativa ativa.`;
-        } else {
-          detalheEfeito = `Item de pulo ativado com sucesso (+${pulosAdicionados} pulo).`;
-        }
-      } else if (
-        efeito.includes('ELIMINA') ||
-        efeito.includes('CARTAS')
-      ) {
-        const qtdEliminar = valorEfeito > 0 ? valorEfeito : 2;
-        detalheEfeito = `Elimina até ${qtdEliminar} alternativas incorretas da questão atual.`;
-      } else {
-        detalheEfeito = `Efeito '${itemCatalogo.tipo_efeito}' ativado com valor ${valorEfeito}.`;
+      if (tentativaAtiva) {
+        novaVidaTentativa = Math.min(
+          tentativaAtiva.vida_restante + vidaRecuperada,
+          vidaMaxima,
+        );
       }
 
-      const quantidadeRestante = quantidadeAtual - 1;
-      let inventarioRestante = null;
-
-      if (quantidadeRestante > 0) {
-        inventarioRestante = await tx.inventario_itens.update({
-          where: { id: registro.id },
-          data: { quantidade: quantidadeRestante },
-          include: { itens: true },
-        });
+      detalheEfeito = `Recuperou ${vidaRecuperada} ponto(s) de vida. Vida atual: ${vidaAtualizada}/${vidaMaxima}.`;
+    } else if (efeito.includes('PULO') || efeito.includes('SKIP')) {
+      const pulosAdicionados = valorEfeito > 0 ? valorEfeito : 1;
+      if (tentativaAtiva) {
+        novosPulosTentativa =
+          (tentativaAtiva.pulos_restantes ?? 0) + pulosAdicionados;
+        detalheEfeito = `Adicionou ${pulosAdicionados} pulo(s) na tentativa ativa.`;
       } else {
-        await tx.inventario_itens.delete({
-          where: { id: registro.id },
-        });
+        detalheEfeito = `Item de pulo ativado com sucesso (+${pulosAdicionados} pulo).`;
       }
+    } else if (efeito.includes('ELIMINA') || efeito.includes('CARTAS')) {
+      const qtdEliminar = valorEfeito > 0 ? valorEfeito : 2;
+      detalheEfeito = `Elimina até ${qtdEliminar} alternativas incorretas da questão atual.`;
+    } else {
+      detalheEfeito = `Efeito '${itemCatalogo.tipo_efeito}' ativado com valor ${valorEfeito}.`;
+    }
 
-      return {
-        mensagem: `Item '${itemCatalogo.nome}' utilizado com sucesso.`,
-        efeito_aplicado: {
-          item_id: itemCatalogo.id,
-          nome: itemCatalogo.nome,
-          tipo_efeito: itemCatalogo.tipo_efeito,
-          valor_efeito: itemCatalogo.valor_efeito,
-          detalhe: detalheEfeito,
-        },
-        vida_atual: vidaAtualizada,
-        quantidade_restante: quantidadeRestante,
-        inventario: inventarioRestante,
-      };
-    });
+    const quantidadeRestante = quantidadeAtual - 1;
+    const inventarioRestante = await this.repository.consumirItemTransacao(
+      personagemId,
+      registro.id,
+      quantidadeRestante,
+      novaVidaPersonagem,
+      tentativaAtiva?.id,
+      novaVidaTentativa,
+      novosPulosTentativa,
+    );
+
+    return {
+      mensagem: `Item '${itemCatalogo.nome}' utilizado com sucesso.`,
+      efeito_aplicado: {
+        item_id: itemCatalogo.id,
+        nome: itemCatalogo.nome,
+        tipo_efeito: itemCatalogo.tipo_efeito,
+        valor_efeito: itemCatalogo.valor_efeito,
+        detalhe: detalheEfeito,
+      },
+      vida_atual: vidaAtualizada,
+      quantidade_restante: quantidadeRestante,
+      inventario: inventarioRestante,
+    };
   }
 
-  create(createInventarioItenDto: CreateInventarioItenDto) {
-    return 'This action adds a new inventarioIten';
-  }
 
-  findAll() {
-    return `This action returns all inventarioItens`;
-  }
+  async findOne(personagemId: number, id: number) {
+    const registro = await this.repository.buscarPorIdEPersonagem(
+      id,
+      personagemId,
+    );
 
-  findOne(id: number) {
-    return `This action returns a #${id} inventarioIten`;
-  }
+    if (!registro) {
+      throw new NotFoundException(
+        'Item nao encontrado no inventario deste personagem.',
+      );
+    }
 
-  update(id: number, updateInventarioItenDto: UpdateInventarioItenDto) {
-    return `This action updates a #${id} inventarioIten`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} inventarioIten`;
+    return registro;
   }
 
   async listarMochila(personagemId: number, filtros: FindInventarioQueryDto) {
-    const condicoes: Prisma.inventario_itensWhereInput = {
-      personagem_id: personagemId,
-    };
-
-    if (filtros.quantidade_minima !== undefined) {
-      condicoes.quantidade = {
-        gte: filtros.quantidade_minima,
-      };
-    }
-
-    if (filtros.tipo_efeito) {
-      condicoes.itens = {
-        tipo_efeito: {
-          contains: filtros.tipo_efeito,
-          mode: 'insensitive',
-        },
-      };
-    }
-
-    const page = filtros.page ?? 1;
-    const limit = filtros.limit ?? 10;
-
-    const total = await this.prisma.inventario_itens.count({
-      where: condicoes,
-    });
-
-    const items = await this.prisma.inventario_itens.findMany({
-      where: condicoes,
-      include: { itens: true },
-      orderBy: { id: 'asc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
-
-    return { items, page, limit, total };
+     return this.repository.listarMochilaPaginada(personagemId, filtros);
   }
 
   async descartarItem(personagemId: number, id: number) {
-    const registro = await this.prisma.inventario_itens.findFirst({
-      where: {
-        id,
-        personagem_id: personagemId,
-      },
-      include: { itens: true },
-    });
+    const registro = await this.repository.buscarPorIdEPersonagem(
+      id,
+      personagemId,
+    );
 
     if (!registro || !registro.itens) {
       throw new NotFoundException(
@@ -578,36 +408,27 @@ export class InventarioItensService {
     }
 
     const valorReembolso = Math.floor(registro.itens.preco_moedas * 0.9);
+    const quantidadeAtual = registro.quantidade ?? 1;
+    const quantidadeRestante = quantidadeAtual - 1;
 
-    return this.prisma.$transaction(async (tx) => {
-      const personagemAtualizado = await tx.personagens.update({
-        where: { id: personagemId },
-        data: {
-          moedas: { increment: valorReembolso },
-        },
-      });
+    const resultado = await this.repository.salvarVendaTransacao(
+      personagemId,
+      registro.id,
+      quantidadeRestante,
+      valorReembolso,
+    );
 
-      if ((registro.quantidade ?? 1) > 1) {
-        const atualizado = await tx.inventario_itens.update({
-          where: { id: registro.id },
-          data: { quantidade: (registro.quantidade ?? 1) - 1 },
-        });
-
-        return {
-          mensagem: 'Uma unidade do item foi vendida com 10% de taxa.',
-          moedas_atuais: personagemAtualizado.moedas,
-          inventario: atualizado,
-        };
-      }
-
-      await tx.inventario_itens.delete({
-        where: { id: registro.id },
-      });
-
+    if (quantidadeAtual > 1) {
       return {
-        mensagem: 'Item vendido completamente da mochila com 10% de taxa.',
-        moedas_atuais: personagemAtualizado.moedas,
+        mensagem: 'Uma unidade do item foi vendida com 10% de taxa.',
+        moedas_atuais: resultado.moedas_atuais,
+        inventario: resultado.inventario,
       };
-    });
+    }
+
+    return {
+      mensagem: 'Item vendido completamente da mochila com 10% de taxa.',
+      moedas_atuais: resultado.moedas_atuais,
+    };
   }
 }

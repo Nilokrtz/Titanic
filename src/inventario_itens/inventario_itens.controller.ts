@@ -191,6 +191,29 @@ export class InventarioItensController {
     return this.inventarioItensService.listarMochila(personagemId, filtros);
   }
 
+
+  @Get(':id')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Consulta um item especifico da mochila pelo ID' })
+  @ApiParam({ name: 'personagemId', type: Number })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ description: 'Item retornado com sucesso.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou invalido.' })
+  @ApiNotFoundResponse({ description: 'Item nao encontrado no inventario.' })
+  findOne(
+    @Param('personagemId') paramPersonagemId: string | undefined,
+    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+     const rawId = paramPersonagemId ?? paramPersonagenId;
+     const personagemId = Number(rawId);
+     if (!rawId || isNaN(personagemId)) {
+       throw new BadRequestException('ID do personagem invalido.');
+     }
+     return this.inventarioItensService.findOne(personagemId, id);
+  }
+
   @Delete(':id')
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
@@ -215,4 +238,3 @@ export class InventarioItensController {
     return this.inventarioItensService.descartarItem(personagemId, id);
   }
 }
-
