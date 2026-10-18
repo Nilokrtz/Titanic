@@ -1,0 +1,1 @@
+ALTER TABLE "personagens" ALTER COLUMN "moedas" SET DEFAULT 0;
