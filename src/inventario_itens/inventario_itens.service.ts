@@ -5,6 +5,7 @@ import { CreateInventarioItenDto } from './dto/create-inventario_iten.dto.js';
 import { FindInventarioQueryDto } from './dto/find-inventario-query.dto.js';
 import { UpdateInventarioItenDto } from './dto/update-inventario_iten.dto.js';
 import { ComprarItemDto } from './dto/comprar-item.dto.js';
+import { VenderItemDto } from './dto/vender-item.dto.js';
 
 @Injectable()
 export class InventarioItensService {
@@ -157,6 +158,158 @@ export class InventarioItensService {
         moedas_atuais: personagemAtualizado.moedas,
         total_itens_inventario: totalItensAtuais + quantidade,
         inventario: itemInventario,
+      };
+    });
+  }
+
+  async venderItem(
+    personagemId: number,
+    venderItemDto: VenderItemDto,
+    usuarioId?: number,
+  ) {
+    const itemId = venderItemDto.item_id ?? venderItemDto.itemId;
+    const inventarioId =
+      venderItemDto.inventario_id ??
+      venderItemDto.inventarioId ??
+      venderItemDto.id;
+
+    if (!itemId && !inventarioId) {
+      throw new BadRequestException(
+        'Informe o item_id ou inventario_id do item a ser vendido.',
+      );
+    }
+
+    const quantidade = venderItemDto.quantidade ?? 1;
+    if (quantidade <= 0) {
+      throw new BadRequestException(
+        'A quantidade a vender deve ser maior que zero.',
+      );
+    }
+
+    // 1. Busca e valida o personagem
+    const personagem = await this.prisma.personagens.findUnique({
+      where: { id: personagemId },
+    });
+
+    if (!personagem) {
+      throw new NotFoundException('Personagem não encontrado.');
+    }
+
+    // 2. Valida permissão do usuário (apenas dono do personagem pode vender itens do próprio inventário)
+    if (usuarioId !== undefined) {
+      const usuario = await this.prisma.usuarios.findUnique({
+        where: { id: usuarioId },
+        select: { perfis: { select: { nome: true } } },
+      });
+
+      const isOwner = personagem.usuario_id === usuarioId;
+      const isAdmin = usuario?.perfis?.nome === tipo_perfil.ADMIN_PROFESSOR;
+
+      if (!isOwner && !isAdmin) {
+        throw new ForbiddenException(
+          'Apenas o dono do personagem pode vender itens do seu inventário.',
+        );
+      }
+    }
+
+    // 3. Localiza o registro do item no inventário do personagem
+    let registro = null;
+
+    if (inventarioId) {
+      registro = await this.prisma.inventario_itens.findFirst({
+        where: {
+          id: inventarioId,
+          personagem_id: personagemId,
+        },
+        include: { itens: true },
+      });
+    }
+
+    if (!registro && itemId) {
+      registro = await this.prisma.inventario_itens.findFirst({
+        where: {
+          item_id: itemId,
+          personagem_id: personagemId,
+        },
+        include: { itens: true },
+      });
+    }
+
+    if (!registro && inventarioId) {
+      registro = await this.prisma.inventario_itens.findFirst({
+        where: {
+          item_id: inventarioId,
+          personagem_id: personagemId,
+        },
+        include: { itens: true },
+      });
+    }
+
+    if (!registro || !registro.itens) {
+      throw new NotFoundException(
+        'Item não encontrado no inventário deste personagem.',
+      );
+    }
+
+    const itemCatalogo = registro.itens;
+
+    // Regra de negócio: itens lendários Easter Egg não podem ser vendidos
+    if (itemCatalogo.tipo_efeito === 'EASTER_EGG') {
+      throw new BadRequestException(
+        'Itens lendários do tipo Easter Egg não podem ser vendidos.',
+      );
+    }
+
+    const quantidadeAtual = registro.quantidade ?? 1;
+    if (quantidadeAtual < quantidade) {
+      throw new BadRequestException(
+        `Quantidade insuficiente no inventário. O personagem possui ${quantidadeAtual} unidade(s) e tentou vender ${quantidade}.`,
+      );
+    }
+
+    // 4. Regra de Negócio: Sistema de Venda de Itens (Taxa de 10% / Perda de 10%)
+    const precoOriginalUnitario = itemCatalogo.preco_moedas;
+    const valorUnitarioVenda = Math.floor(precoOriginalUnitario * 0.9);
+    const valorTotalRecebido = valorUnitarioVenda * quantidade;
+
+    // 5. Executa transação atômica
+    return this.prisma.$transaction(async (tx) => {
+      // Credita as moedas no personagem
+      const personagemAtualizado = await tx.personagens.update({
+        where: { id: personagemId },
+        data: {
+          moedas: { increment: valorTotalRecebido },
+        },
+      });
+
+      const quantidadeRestante = quantidadeAtual - quantidade;
+      let inventarioRestante = null;
+
+      if (quantidadeRestante > 0) {
+        inventarioRestante = await tx.inventario_itens.update({
+          where: { id: registro.id },
+          data: { quantidade: quantidadeRestante },
+          include: { itens: true },
+        });
+      } else {
+        await tx.inventario_itens.delete({
+          where: { id: registro.id },
+        });
+      }
+
+      return {
+        mensagem: 'Venda realizada com sucesso com aplicação de 10% de taxa.',
+        item_vendido: {
+          id: itemCatalogo.id,
+          nome: itemCatalogo.nome,
+          preco_original: precoOriginalUnitario,
+          valor_unitario_venda: valorUnitarioVenda,
+          quantidade_vendida: quantidade,
+          valor_total_recebido: valorTotalRecebido,
+        },
+        moedas_atuais: personagemAtualizado.moedas,
+        quantidade_restante: quantidadeRestante,
+        inventario: inventarioRestante,
       };
     });
   }

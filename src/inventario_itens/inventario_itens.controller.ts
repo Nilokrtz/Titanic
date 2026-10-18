@@ -4,6 +4,7 @@ import type { Request } from 'express';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { FindInventarioQueryDto } from './dto/find-inventario-query.dto.js';
 import { ComprarItemDto } from './dto/comprar-item.dto.js';
+import { VenderItemDto } from './dto/vender-item.dto.js';
 import { InventarioItensService } from './inventario_itens.service.js';
 
 @ApiTags('Inventário')
@@ -59,6 +60,55 @@ export class InventarioItensController {
     return this.inventarioItensService.comprarItem(
       personagemId,
       comprarItemDto,
+      requisicao.usuarioId,
+    );
+  }
+
+  @Post('vender')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Vende itens do próprio inventário com perda de 10% do valor original',
+  })
+  @ApiParam({
+    name: 'personagemId',
+    type: Number,
+    required: false,
+    description: 'ID do personagem',
+  })
+  @ApiParam({
+    name: 'personagenId',
+    type: Number,
+    required: false,
+    description: 'ID do personagem (alias)',
+  })
+  @ApiOkResponse({ description: 'Item vendido com sucesso (reembolso de 90%).' })
+  @ApiBadRequestResponse({
+    description:
+      'Quantidade insuficiente, dados inválidos ou item não comercializável.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({
+    description: 'Apenas o dono do personagem pode vender seus itens.',
+  })
+  @ApiNotFoundResponse({
+    description: 'Personagem ou item no inventário não encontrado.',
+  })
+  venderItem(
+    @Param('personagemId') paramPersonagemId: string | undefined,
+    @Param('personagenId') paramPersonagenId: string | undefined,
+    @Body() venderItemDto: VenderItemDto,
+    @Req() requisicao: Request & { usuarioId: number },
+  ) {
+    const rawId = paramPersonagemId ?? paramPersonagenId;
+    const personagemId = Number(rawId);
+    if (!rawId || isNaN(personagemId)) {
+      throw new BadRequestException('ID do personagem inválido.');
+    }
+
+    return this.inventarioItensService.venderItem(
+      personagemId,
+      venderItemDto,
       requisicao.usuarioId,
     );
   }
