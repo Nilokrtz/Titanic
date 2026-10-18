@@ -66,4 +66,18 @@ export class PerfisService {
 
     return this.repository.adicionarPermissao(id, dto.permissaoId);
   }
+
+  async removerPermissao(perfilId: number, permissaoId: number) {
+    const perfil = await this.repository.buscarPorId(perfilId);
+    if (!perfil) {
+      throw new NotFoundException(`Perfil com ID ${perfilId} não encontrado.`);
+    }
+
+    const permissao = await this.permissoesRepository.buscarPorId(permissaoId);
+    if (!permissao) {
+      throw new NotFoundException(`Permissão com ID ${permissaoId} não encontrada.`);
+    }
+
+    return this.repository.removerPermissao(perfilId, permissaoId);
+  }
 }

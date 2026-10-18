@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Post,
+  Delete
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -101,6 +102,8 @@ export class PerfisController {
   @ApiOperation({ summary: 'Adiciona uma permissão a um perfil' })
   @ApiParam({ name: 'id', type: Number, description: 'ID do perfil', example: 1 })
   @ApiCreatedResponse({ description: 'Permissão adicionada ao perfil com sucesso.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Apenas o professor pode gerenciar permissões.' })
   @ApiNotFoundResponse({ description: 'Perfil ou permissão não encontrados.' })
   adicionarPermissao(
     @Param('id', ParseIntPipe) id: number,
@@ -108,6 +111,23 @@ export class PerfisController {
   ) {
     return this.perfisService.adicionarPermissao(id, dto);
   }
-  
+
+  @Delete(':id/permissoes/:permissaoId')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Remove uma permissão de um perfil' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID do perfil', example: 1 })
+  @ApiParam({ name: 'permissaoId', type: Number, description: 'ID da permissão', example: 1 })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Apenas o professor pode gerenciar permissões.' })
+  @ApiOkResponse({ description: 'Permissão removida do perfil com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Perfil ou Permissão não encontrada.' })
+  removerPermissao(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('permissaoId', ParseIntPipe) permissaoId: number,
+  ) {
+    return this.perfisService.removerPermissao(id, permissaoId);
+  }
   
 }
