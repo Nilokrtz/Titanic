@@ -2,9 +2,41 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Counter } from 'prom-client';
+import type { NextFunction, Request, Response } from 'express';
+
+const requisicoesHttp = new Counter({
+  name: 'http_requests_total',
+  help: 'Total de requisicoes HTTP por rota e status',
+  labelNames: ['method', 'route', 'status_code'],
+});
+
+const rotasMonitoradas = [
+  'GET /',
+  'GET /personagens/:id',
+  'POST /auth/login',
+  'POST /auth/registrar',
+  'POST /personagens',
+];
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use((requisicao: Request, resposta: Response, proximo: NextFunction) => {
+    resposta.on('finish', () => {
+      const rota = requisicao.route?.path;
+
+      if (rota && rotasMonitoradas.includes(`${requisicao.method} ${rota}`)) {
+        requisicoesHttp.inc({
+          method: requisicao.method,
+          route: rota,
+          status_code: resposta.statusCode,
+        });
+      }
+    });
+
+    proximo();
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
