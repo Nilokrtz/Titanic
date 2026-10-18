@@ -1,34 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiNotFoundResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse} from '@nestjs/swagger';
+import { tipo_perfil } from '../generated/prisma/client.js';
+import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
+import { RolesGuard } from '../auth/guards/roles.guard.js';
+import { Roles } from '../auth/decorators/roles.decorator.js';
 import { QuizQuestoesService } from './quiz_questoes.service.js';
-import { CreateQuizQuestoeDto } from './dto/create-quiz_questoe.dto.js';
-import { UpdateQuizQuestoeDto } from './dto/update-quiz_questoe.dto.js';
+import { CreateQuizQuestoesDto } from './dto/create-quiz_questoes.dto.js';
 
-@Controller('quiz-questoes')
+@ApiTags('Quiz Questões')
+@Controller('questoes')
 export class QuizQuestoesController {
   constructor(private readonly quizQuestoesService: QuizQuestoesService) {}
 
   @Post()
-  create(@Body() createQuizQuestoeDto: CreateQuizQuestoeDto) {
-    return this.quizQuestoesService.create(createQuizQuestoeDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.quizQuestoesService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.quizQuestoesService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateQuizQuestoeDto: UpdateQuizQuestoeDto) {
-    return this.quizQuestoesService.update(+id, updateQuizQuestoeDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.quizQuestoesService.remove(+id);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Cadastra uma nova questão' })
+  @ApiCreatedResponse({ description: 'Questão cadastrada com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiNotFoundResponse({ description: 'Sala de desafio não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  create(@Body() createDto: CreateQuizQuestoesDto) {
+    return this.quizQuestoesService.create(createDto);
   }
 }
