@@ -1,11 +1,9 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Put,
   Param,
-  Delete,
   ParseIntPipe,
   Query,
   UseGuards,
@@ -26,7 +24,6 @@ import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { PerfisService } from './perfis.service.js';
-import { CreatePerfiDto } from './dto/create-perfi.dto.js';
 import { ListarPerfisDto } from './dto/listar-perfis.dto.js';
 import { ListarPerfisRespostaDto } from './dto/listar-perfis-resposta.dto.js';
 import { PerfilRespostaDto } from './dto/perfil-resposta.dto.js';
@@ -36,11 +33,6 @@ import { UpdatePerfiDto } from './dto/update-perfi.dto.js';
 @Controller('perfis')
 export class PerfisController {
   constructor(private readonly perfisService: PerfisService) {}
-
-  @Post()
-  create(@Body() createPerfiDto: CreatePerfiDto) {
-    return this.perfisService.create(createPerfiDto);
-  }
 
   @Get()
   @UseGuards(AutenticacaoGuard)
@@ -86,10 +78,5 @@ export class PerfisController {
     @Body() atualizacao: UpdatePerfiDto,
   ): Promise<PerfilRespostaDto> {
     return this.perfisService.update(id, atualizacao);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.perfisService.remove(+id);
   }
 }

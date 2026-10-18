@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CreatePerfiDto } from './dto/create-perfi.dto.js';
 import { ListarPerfisDto } from './dto/listar-perfis.dto.js';
 import { ListarPerfisRespostaDto } from './dto/listar-perfis-resposta.dto.js';
 import { PerfilRespostaDto } from './dto/perfil-resposta.dto.js';
@@ -10,10 +9,6 @@ import { UpdatePerfiDto } from './dto/update-perfi.dto.js';
 @Injectable()
 export class PerfisService {
   constructor(private readonly prisma: PrismaService) {}
-
-  create(createPerfiDto: CreatePerfiDto) {
-    return 'This action adds a new perfi';
-  }
 
   async findAll(filtros: ListarPerfisDto): Promise<ListarPerfisRespostaDto> {
     const condicoes: Prisma.perfisWhereInput = {};
@@ -77,9 +72,5 @@ export class PerfisService {
       data: { descricao: atualizacao.descricao },
       select: { id: true, nome: true, descricao: true },
     });
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} perfi`;
   }
 }
