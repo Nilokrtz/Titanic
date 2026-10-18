@@ -28,8 +28,13 @@ export class PermissoesController {
   }
 
   @Get()
-  findAll() {
-    return this.permissoesService.findAll();
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Listar todas as permissões com paginação e filtros' })
+  @ApiOkResponse({ description: 'Lista de permissões retornada com sucesso.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  findAll(@Query() query: FindPermissoesQueryDto) {
+    return this.permissoesService.findAll(query);
   }
 
   @Get(':id')

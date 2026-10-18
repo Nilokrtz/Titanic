@@ -16,8 +16,19 @@ export class PermissoesService {
     return this.repository.criar(dados);
   }
 
-  findAll() {
-    return `This action returns all permissoes`;
+  async findAll(query: FindPermissoesQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const { dados, total } = await this.repository.listarComPaginacao(query);
+    const totalPaginas = Math.ceil(total / limit);
+    return {
+      dados,
+      total,
+      page,
+      totalPaginas,
+      limit,
+    };
   }
 
   findOne(id: number) {
