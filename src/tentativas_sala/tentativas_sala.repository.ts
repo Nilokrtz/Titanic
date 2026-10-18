@@ -98,4 +98,59 @@ export class TentativasSalaRepository {
       where: { id },
     });
   }
+  
+  async buscarPersonagemCompleto(personagemId: number) {
+    return this.prisma.personagens.findUnique({
+      where: { id: personagemId },
+      include: {
+        ranks: true,
+        especializacoes: true,
+      },
+    });
+  }
+
+  async buscarSalaComRankMinimo(salaId: number) {
+    return this.prisma.salas_desafio.findUnique({
+      where: { id: salaId },
+      include: {
+        ranks: true,
+      },
+    });
+  }
+
+  async buscarTentativaConcluida(personagemId: number, salaId: number) {
+    return this.prisma.tentativas_sala.findFirst({
+      where: {
+        personagem_id: personagemId,
+        sala_id: salaId,
+        status: 'VITORIA',
+      },
+    });
+  }
+
+  async atualizarVidaEStatusPersonagem(personagemId: number, vidaAtual: number) {
+    return this.prisma.personagens.update({
+      where: { id: personagemId },
+      data: { vida_atual: vidaAtual },
+    });
+  }
+
+  async atualizarTentativa(tentativaId: number, data: { status?: 'EM_ANDAMENTO' | 'VITORIA' | 'DERROTA'; vida_restante?: number; erros?: number; acertos?: number }) {
+    return this.prisma.tentativas_sala.update({
+      where: { id: tentativaId },
+      data: {
+        ...data,
+        ...(data.status && data.status !== 'EM_ANDAMENTO' ? { finalizado_em: new Date() } : {}),
+      },
+    });
+  }
+
+  async somarTotalErrosPersonagem(personagemId: number): Promise<number> {
+    const resultado = await this.prisma.tentativas_sala.aggregate({
+      where: { personagem_id: personagemId },
+      _sum: { erros: true },
+    });
+
+    return resultado._sum.erros ?? 0;
+  }
 }
