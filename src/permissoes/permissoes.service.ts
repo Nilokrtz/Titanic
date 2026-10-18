@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PermissoesRepository } from './permissoes.repository.js';
 import { CreatePermissoeDto } from './dto/create-permissoe.dto.js';
 import { FindPermissoesQueryDto } from './dto/find-permissoes-query.dto.js';
@@ -31,8 +31,12 @@ export class PermissoesService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} permissoe`;
+  async findOne(id: number) {
+    const permissao = await this.repository.buscarPorId(id);
+    if (!permissao) {
+      throw new NotFoundException(`Permissão com ID ${id} não encontrada.`);
+    }
+    return permissao;
   }
 
   update(id: number, updatePermissoeDto: UpdatePermissoeDto) {

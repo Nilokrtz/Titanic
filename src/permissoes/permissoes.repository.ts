@@ -47,4 +47,10 @@ export class PermissoesRepository {
         return { dados, total };
     }
 
+    async buscarPorId(id: number) {
+        return this.prisma.permissoes.findUnique({
+            where: { id },
+        });
+    }
+
 }

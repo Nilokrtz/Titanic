@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Put, Body, Patch, Param, Delete, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiOkResponse, ApiCreatedResponse, ApiBadRequestResponse, ApiUnauthorizedResponse, ApiForbiddenResponse, ApiBearerAuth, ApiParam, ApiNotFoundResponse } from '@nestjs/swagger';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -38,8 +38,14 @@ export class PermissoesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.permissoesService.findOne(+id);
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Obter uma permissão pelo ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da permissão', example: 1 })
+  @ApiOkResponse({ description: 'Permissão retornada com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Permissão não encontrada para o ID informado.' })
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.permissoesService.findOne(id);
   }
 
   @Patch(':id')
