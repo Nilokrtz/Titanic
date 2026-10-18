@@ -9,6 +9,7 @@ import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
 import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
 import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
 import { RankingXpRespostaDto } from './dto/ranking-xp-resposta.dto.js';
+import { ListarTentativasPersonagemDto } from './dto/listar-tentativas-personagem.dto.js';
 
 @Injectable()
 export class PersonagensService {
@@ -104,6 +105,23 @@ export class PersonagensService {
     }
 
     return personagem;
+  }
+
+  async listarTentativas(
+    personagemId: number,
+    usuarioId: number,
+    filtros: ListarTentativasPersonagemDto,
+  ) {
+    if (
+      !Number.isSafeInteger(personagemId) ||
+      personagemId < 1 ||
+      personagemId > 2147483647
+    ) {
+      throw new BadRequestException('ID do personagem inválido.');
+    }
+
+    await this.findOne(personagemId, usuarioId);
+    return this.repository.listarTentativas(personagemId, filtros);
   }
 
   async findMe(

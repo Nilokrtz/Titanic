@@ -5,11 +5,33 @@ import { CreatePersonagenDto } from './dto/create-personagen.dto.js';
 import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
 import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
 import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
+import { ListarTentativasPersonagemDto } from './dto/listar-tentativas-personagem.dto.js';
 
 
 @Injectable()
 export class PersonagensRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listarTentativas(personagemId: number, filtros: ListarTentativasPersonagemDto) {
+    const where: Prisma.tentativas_salaWhereInput = {
+      personagem_id: personagemId,
+      sala_id: filtros.sala_id,
+      status: filtros.status,
+    };
+    const page = filtros.page ?? 1;
+    const limit = filtros.limit ?? 10;
+    const [items, total] = await Promise.all([
+      this.prisma.tentativas_sala.findMany({
+        where,
+        include: { salas_desafio: true },
+        orderBy: [{ iniciado_em: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.tentativas_sala.count({ where }),
+    ]);
+    return { items, page, limit, total };
+  }
 
   async buscarUsuarioPorId(usuarioId: number) {
     return this.prisma.usuarios.findUnique({
