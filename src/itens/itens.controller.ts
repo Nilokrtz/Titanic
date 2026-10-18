@@ -39,15 +39,19 @@ export class ItensController {
   }
 
   @Get()
-   @ApiOperation({ summary: 'Lista itens da loja com paginacao e filtros' })
-   @ApiOkResponse({ type: ListarItensRespostaDto }) 
-   @ApiBadRequestResponse({ description: 'Filtros invalidos.' }) 
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Lista itens da loja com paginacao e filtros' })
+  @ApiOkResponse({ type: ListarItensRespostaDto }) 
+  @ApiBadRequestResponse({ description: 'Filtros invalidos.' }) 
   findAll(@Query() filtros: FindItensQueryDto) {
     return this.itensService.findAll(filtros);
   }
 
 
   @Get(':id')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Consulta um item pelo ID' })
   @ApiParam({ name: 'id', type: Number }) 
   @ApiOkResponse({ type: ItemRespostaDto })
