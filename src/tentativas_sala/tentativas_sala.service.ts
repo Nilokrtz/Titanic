@@ -152,4 +152,163 @@ export class TentativasSalaService {
       mensagem: 'Boss derrotado, mas o personagem sofreu erros ao longo da jornada.'
      };
   }
+
+  private async validarPartidaParaAjuda(tentativaId: number) {
+    const tentativa = await this.repository.buscarPorId(tentativaId);
+
+    if (!tentativa) {
+      throw new NotFoundException('Tentativa de sala nao encontrada.');
+    }
+
+    if (tentativa.status !== 'EM_ANDAMENTO') {
+      throw new BadRequestException('Esta tentativa ja foi finalizada.');
+    }
+
+    const nomeSala = tentativa.salas_desafio?.nome ?? '';
+    const chefeSala = tentativa.salas_desafio?.chefe_nome ?? '';
+    const isBossFinal =
+      /boss[_\s]*final|chefe[_\s]*final/i.test(nomeSala) ||
+      /boss[_\s]*final|chefe[_\s]*final/i.test(chefeSala);
+
+    if (isBossFinal) {
+      throw new BadRequestException(
+        'E proibido usar ajudas durante a batalha na sala do Boss Final.',
+      );
+    }
+
+    if (!tentativa.personagem_id || !tentativa.sala_id) {
+      throw new BadRequestException(
+        'Tentativa sem personagem ou sala vinculada.',
+      );
+    }
+
+    const questao =
+      tentativa.quiz_questoes ??
+      (await this.repository.buscarPrimeiraQuestaoDaSala(tentativa.sala_id));
+
+    if (!questao) {
+      throw new BadRequestException(
+        'Nao ha questao ativa nesta tentativa no momento.',
+      );
+    }
+
+    return {
+      tentativa,
+      questao,
+      personagemId: tentativa.personagem_id,
+      salaId: tentativa.sala_id,
+    };
+  }
+
+  async usarAjudaDica(tentativaId: number) {
+    const { questao, personagemId } =
+      await this.validarPartidaParaAjuda(tentativaId);
+
+    const itemMochila = await this.repository.buscarItemAjudaNaMochila(
+      personagemId,
+      'DICA',
+    );
+
+    if (!itemMochila) {
+      throw new BadRequestException(
+        'O personagem nao possui o item de Dica na mochila.',
+      );
+    }
+
+    await this.repository.consumirItemDaMochila(
+      itemMochila.id,
+      itemMochila.quantidade ?? 1,
+    );
+
+    return {
+      questao_id: questao.id,
+      dica: questao.dica_texto ?? 'Nenhuma dica cadastrada para esta questao.',
+    };
+  }
+
+  async usarAjudaCartas(tentativaId: number) {
+    const { questao, personagemId } =
+      await this.validarPartidaParaAjuda(tentativaId);
+
+    const itemMochila =
+      (await this.repository.buscarItemAjudaNaMochila(
+        personagemId,
+        'ELIMINAR',
+      )) ??
+      (await this.repository.buscarItemAjudaNaMochila(personagemId, 'CARTAS'));
+
+    if (!itemMochila) {
+      throw new BadRequestException(
+        'O personagem nao possui o item Cartas na mochila.',
+      );
+    }
+
+    await this.repository.consumirItemDaMochila(
+      itemMochila.id,
+      itemMochila.quantidade ?? 1,
+    );
+
+    const todasOpcoes = ['A', 'B', 'C', 'D'];
+    const opcoesIncorretas = todasOpcoes.filter(
+      (opcao) => opcao !== questao.resposta_correta?.toUpperCase(),
+    );
+
+    const opcoesEliminadas = opcoesIncorretas
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+
+    return {
+      questao_id: questao.id,
+      opcoes_eliminadas: opcoesEliminadas,
+      mensagem: `As cartas eliminaram as alternativas: ${opcoesEliminadas.join(' e ')}.`,
+    };
+  }
+
+  async usarAjudaPular(tentativaId: number) {
+    const { tentativa, questao, personagemId, salaId } =
+      await this.validarPartidaParaAjuda(tentativaId);
+
+    if ((tentativa.pulos_restantes ?? 0) <= 0) {
+      throw new BadRequestException(
+        'Voce nao possui mais pulos disponiveis nesta tentativa.',
+      );
+    }
+
+    const novaQuestao = await this.repository.buscarOutraQuestaoDaSala(
+      salaId,
+      questao.id,
+    );
+
+    if (!novaQuestao) {
+      throw new BadRequestException(
+        'Nao ha outra questao disponivel nesta sala para pular.',
+      );
+    }
+
+    const itemMochila = await this.repository.buscarItemAjudaNaMochila(
+      personagemId,
+      'PULAR',
+    );
+
+    if (!itemMochila) {
+      throw new BadRequestException(
+        'O personagem nao possui o item Pular na mochila.',
+      );
+    }
+
+    const tentativaAtualizada = await this.repository.pularQuestaoTransacao(
+      tentativaId,
+      itemMochila.id,
+      itemMochila.quantidade ?? 1,
+      novaQuestao.id,
+      tentativa.pulos_restantes ?? 1,
+    );
+
+    return {
+      mensagem: 'Questao pulada com sucesso sem perda de vida.',
+      pulos_restantes: tentativaAtualizada.pulos_restantes,
+      nova_questao_id: novaQuestao.id,
+      enunciado: novaQuestao.enunciado,
+    };
+  }
 }
