@@ -6,6 +6,7 @@ import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
 import { ListarPersonagensRespostaDto } from './dto/listar-personagens-resposta.dto.js';
 import { PersonagemRespostaDto } from './dto/personagem-resposta.dto.js';
 import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
+import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
 
 @Injectable()
 export class PersonagensService {
@@ -98,6 +99,19 @@ export class PersonagensService {
 
     return personagem;
   }
+
+  async findMe(
+  usuarioId: number,
+  filtros: ListarPersonagensMeDto,
+): Promise<ListarPersonagensRespostaDto> {
+  const usuario = await this.repository.buscarPerfilDoUsuario(usuarioId);
+
+  if (!usuario || usuario.excluido_em) {
+    throw new UnauthorizedException('Sessão inválida.');
+  }
+
+  return this.repository.listarMe(usuarioId, filtros);
+}
 
   async update(
     id: number,

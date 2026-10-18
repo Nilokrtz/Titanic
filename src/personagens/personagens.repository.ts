@@ -3,6 +3,8 @@ import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePersonagenDto } from './dto/create-personagen.dto.js';
 import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
+import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
+
 
 @Injectable()
 export class PersonagensRepository {
@@ -118,6 +120,55 @@ export class PersonagensRepository {
       total,
     };
   }
+
+  async listarMe(
+  usuarioId: number,
+  filtros: ListarPersonagensMeDto,
+) {
+  const condicoes: Prisma.personagensWhereInput = {
+    usuario_id: usuarioId,
+  };
+
+  if (filtros.nome) {
+    condicoes.nome = {
+      contains: filtros.nome,
+      mode: 'insensitive',
+    };
+  }
+
+  if (filtros.especializacao_id !== undefined) {
+    condicoes.especializacao_id = filtros.especializacao_id;
+  }
+
+  const total = await this.prisma.personagens.count({
+    where: condicoes,
+  });
+
+  const personagens = await this.prisma.personagens.findMany({
+    where: condicoes,
+    select: {
+      id: true,
+      nome: true,
+      usuario_id: true,
+      especializacao_id: true,
+      rank_id: true,
+      xp_atual: true,
+      vida_maxima: true,
+      vida_atual: true,
+      moedas: true,
+    },
+    orderBy: { id: 'asc' },
+    skip: (filtros.page - 1) * filtros.limit,
+    take: filtros.limit,
+  });
+
+  return {
+    items: personagens,
+    page: filtros.page,
+    limit: filtros.limit,
+    total,
+  };
+}
 
   async excluir(id: number) {
     return this.prisma.personagens.deleteMany({ where: { id } });

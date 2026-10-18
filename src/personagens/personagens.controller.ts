@@ -11,6 +11,7 @@ import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
 import { ListarPersonagensRespostaDto } from './dto/listar-personagens-resposta.dto.js';
 import { PersonagemRespostaDto } from './dto/personagem-resposta.dto.js';
 import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
+import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
 
 @ApiTags('Personagens')
 @Controller('personagens')
@@ -60,6 +61,32 @@ export class PersonagensController {
   findAll(@Query() filtros: ListarPersonagensDto): Promise<ListarPersonagensRespostaDto> {
     return this.personagensService.findAll(filtros);
   }
+
+  @Get('me')
+@UseGuards(AutenticacaoGuard)
+@ApiBearerAuth('JWT-auth')
+@ApiOperation({
+  summary: 'Lista personagens do usuário autenticado com filtros e paginação',
+})
+@ApiOkResponse({
+  type: ListarPersonagensRespostaDto,
+  description: 'Consulta realizada com sucesso.',
+})
+@ApiBadRequestResponse({
+  description: 'Filtros ou paginação inválidos.',
+})
+@ApiUnauthorizedResponse({
+  description: 'Token ausente, inválido ou expirado.',
+})
+findMe(
+  @Query() filtros: ListarPersonagensMeDto,
+  @Req() requisicao: Request & { usuarioId: number },
+): Promise<ListarPersonagensRespostaDto> {
+  return this.personagensService.findMe(
+    requisicao.usuarioId,
+    filtros,
+  );
+}
 
   @Get(':id')
   @UseGuards(AutenticacaoGuard)
