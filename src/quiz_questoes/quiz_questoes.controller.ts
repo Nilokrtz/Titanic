@@ -1,4 +1,4 @@
-import { Controller, Post,Get, Body, UseGuards, Query, ParseIntPipe, Param } from '@nestjs/common';
+import { Controller, Post,Get, Body, UseGuards, Query, ParseIntPipe, Param, Patch } from '@nestjs/common';
 import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiNotFoundResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse, ApiOkResponse, ApiParam} from '@nestjs/swagger';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
@@ -6,6 +6,7 @@ import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { QuizQuestoesService } from './quiz_questoes.service.js';
 import { CreateQuizQuestoesDto } from './dto/create-quiz_questoes.dto.js';
+import { UpdateQuizQuestoesDto } from './dto/update-quiz_questoes.dto.js';
 import { FindQuizQuestoesQueryDto } from './dto/find-quiz-questoes-query.dto.js';
 
 @ApiTags('Quiz Questões')
@@ -50,5 +51,20 @@ export class QuizQuestoesController {
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.quizQuestoesService.findById(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Atualiza dados de uma questão (Apenas Professores/Admins)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da questão' })
+  @ApiOkResponse({ description: 'Questão atualizada com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiNotFoundResponse({ description: 'Questão ou Sala não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  update(@Param('id', ParseIntPipe) id: number,@Body() updateDto: UpdateQuizQuestoesDto) {
+    return this.quizQuestoesService.update(id, updateDto);
   }
 }

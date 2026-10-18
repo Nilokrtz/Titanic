@@ -3,6 +3,7 @@ import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateQuizQuestoesDto } from './dto/create-quiz_questoes.dto.js';
 import { FindQuizQuestoesQueryDto } from './dto/find-quiz-questoes-query.dto.js';
+import { UpdateQuizQuestoesDto } from './dto/update-quiz_questoes.dto.js';
 
 @Injectable()
 export class QuizQuestoesRepository {
@@ -65,6 +66,14 @@ export class QuizQuestoesRepository {
   async buscarPorId(id: number) {
     return this.prisma.quiz_questoes.findUnique({
       where: { id },
+      include: {salas_desafio: true},
+    });
+  }
+
+  async atualizar(id: number, data: UpdateQuizQuestoesDto) {
+    return this.prisma.quiz_questoes.update({
+      where: { id },
+      data,
       include: {salas_desafio: true},
     });
   }
