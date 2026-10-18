@@ -7,25 +7,22 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
 import { SenhasService } from '../auth/senhas.service.js';
-import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateUsuarioDto } from './dto/create-usuario.dto.js';
 import { ListarUsuariosDto } from './dto/listar-usuarios.dto.js';
 import { ListarUsuariosRespostaDto } from './dto/listar-usuarios-resposta.dto.js';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto.js';
 import { UsuarioRespostaDto } from './dto/usuario-resposta.dto.js';
+import { UsuariosRepository } from './usuarios.repository.js';
 
 @Injectable()
 export class UsuariosService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly repository: UsuariosRepository,
     private readonly senhasService: SenhasService,
   ) {}
 
   async create(createUsuarioDto: CreateUsuarioDto): Promise<UsuarioRespostaDto> {
-    const perfil = await this.prisma.perfis.findUnique({
-      where: { id: createUsuarioDto.perfil_id },
-      select: { id: true },
-    });
+    const perfil = await this.repository.buscarPerfil(createUsuarioDto.perfil_id);
 
     if (!perfil) {
       throw new NotFoundException('Perfil não encontrado.');
@@ -35,18 +32,7 @@ export class UsuariosService {
     const hashSenha = await this.senhasService.gerarHash(createUsuarioDto.senha);
 
     try {
-      const usuario = await this.prisma.usuarios.create({
-        data: {
-          email,
-          senha: hashSenha,
-          perfis: { connect: { id: perfil.id } },
-        },
-        select: {
-          id: true,
-          email: true,
-          perfis: { select: { nome: true } },
-        },
-      });
+      const usuario = await this.repository.criar(email, hashSenha, perfil.id);
 
       return {
         id: usuario.id,
@@ -69,13 +55,7 @@ export class UsuariosService {
     filtros: ListarUsuariosDto,
     usuarioId: number,
   ): Promise<ListarUsuariosRespostaDto> {
-    const usuarioAutenticado = await this.prisma.usuarios.findUnique({
-      where: { id: usuarioId },
-      select: {
-        excluido_em: true,
-        perfis: { select: { nome: true } },
-      },
-    });
+    const usuarioAutenticado = await this.repository.buscarUsuario(usuarioId);
 
     if (!usuarioAutenticado || usuarioAutenticado.excluido_em) {
       throw new UnauthorizedException('Sessão inválida.');
@@ -85,28 +65,7 @@ export class UsuariosService {
       throw new ForbiddenException('Apenas o professor pode listar usuários.');
     }
 
-    const condicoes: Prisma.usuariosWhereInput = { excluido_em: null };
-
-    if (filtros.perfil_id) {
-      condicoes.perfil_id = filtros.perfil_id;
-    }
-
-    if (filtros.email) {
-      condicoes.email = { contains: filtros.email, mode: 'insensitive' };
-    }
-
-    const total = await this.prisma.usuarios.count({ where: condicoes });
-    const usuarios = await this.prisma.usuarios.findMany({
-      where: condicoes,
-      select: {
-        id: true,
-        email: true,
-        perfis: { select: { nome: true } },
-      },
-      orderBy: { id: 'asc' },
-      skip: (filtros.page - 1) * filtros.limit,
-      take: filtros.limit,
-    });
+    const { usuarios, total } = await this.repository.listar(filtros);
 
     return {
       items: usuarios.map((usuario) => ({
@@ -121,14 +80,7 @@ export class UsuariosService {
   }
 
   async findOne(id: number, usuarioId: number): Promise<UsuarioRespostaDto> {
-    const usuarioAutenticado = await this.prisma.usuarios.findUnique({
-      where: { id: usuarioId },
-      select: {
-        id: true,
-        excluido_em: true,
-        perfis: { select: { nome: true } },
-      },
-    });
+    const usuarioAutenticado = await this.repository.buscarUsuario(usuarioId);
 
     if (!usuarioAutenticado || usuarioAutenticado.excluido_em) {
       throw new UnauthorizedException('Sessão inválida.');
@@ -141,15 +93,7 @@ export class UsuariosService {
       throw new ForbiddenException('Sem permissão para consultar este usuário.');
     }
 
-    const usuario = await this.prisma.usuarios.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        excluido_em: true,
-        perfis: { select: { nome: true } },
-      },
-    });
+    const usuario = await this.repository.buscarUsuario(id);
 
     if (!usuario || usuario.excluido_em) {
       throw new NotFoundException('Usuário não encontrado.');
@@ -166,19 +110,13 @@ export class UsuariosService {
     id: number,
     atualizacao: UpdateUsuarioDto,
   ): Promise<UsuarioRespostaDto> {
-    const usuarioExistente = await this.prisma.usuarios.findUnique({
-      where: { id },
-      select: { id: true, excluido_em: true },
-    });
+    const usuarioExistente = await this.repository.buscarUsuario(id);
 
     if (!usuarioExistente || usuarioExistente.excluido_em) {
       throw new NotFoundException('Usuário não encontrado.');
     }
 
-    const perfil = await this.prisma.perfis.findUnique({
-      where: { id: atualizacao.perfil_id },
-      select: { id: true },
-    });
+    const perfil = await this.repository.buscarPerfil(atualizacao.perfil_id);
 
     if (!perfil) {
       throw new NotFoundException('Perfil não encontrado.');
@@ -197,15 +135,7 @@ export class UsuariosService {
     }
 
     try {
-      const usuario = await this.prisma.usuarios.update({
-        where: { id },
-        data: dadosAtualizacao,
-        select: {
-          id: true,
-          email: true,
-          perfis: { select: { nome: true } },
-        },
-      });
+      const usuario = await this.repository.atualizar(id, dadosAtualizacao);
 
       return {
         id: usuario.id,
@@ -225,10 +155,7 @@ export class UsuariosService {
   }
 
   async remove(id: number): Promise<void> {
-    const exclusao = await this.prisma.usuarios.updateMany({
-      where: { id, excluido_em: null },
-      data: { excluido_em: new Date(), refresh_token_hash: null },
-    });
+    const exclusao = await this.repository.excluir(id);
 
     if (exclusao.count === 0) {
       throw new NotFoundException('Usuário não encontrado.');

@@ -1,56 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Prisma } from '../generated/prisma/client.js';
-import { PrismaService } from '../prisma/prisma.service.js';
-import { CreatePerfiDto } from './dto/create-perfi.dto.js';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ListarPerfisDto } from './dto/listar-perfis.dto.js';
 import { ListarPerfisRespostaDto } from './dto/listar-perfis-resposta.dto.js';
 import { PerfilRespostaDto } from './dto/perfil-resposta.dto.js';
 import { UpdatePerfiDto } from './dto/update-perfi.dto.js';
+import { PerfisRepository } from './perfis.repository.js';
+import { PermissoesRepository } from '../permissoes/permissoes.repository.js';
+import { AdicionarPermissaoPerfilDto } from './dto/adicionar-permissao-perfil.dto.js';
+
 
 @Injectable()
 export class PerfisService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly repository: PerfisRepository,
+    private readonly permissoesRepository: PermissoesRepository,
+  ) {}
 
-  create(createPerfiDto: CreatePerfiDto) {
-    return 'This action adds a new perfi';
-  }
-
-  async findAll(filtros: ListarPerfisDto): Promise<ListarPerfisRespostaDto> {
-    const condicoes: Prisma.perfisWhereInput = {};
-
-    if (filtros.nome) {
-      condicoes.nome = filtros.nome;
-    }
-
-    if (filtros.descricao) {
-      condicoes.descricao = {
-        contains: filtros.descricao,
-        mode: 'insensitive',
-      };
-    }
-
-    const total = await this.prisma.perfis.count({ where: condicoes });
-    const perfis = await this.prisma.perfis.findMany({
-      where: condicoes,
-      select: { id: true, nome: true, descricao: true },
-      orderBy: { id: 'asc' },
-      skip: (filtros.page - 1) * filtros.limit,
-      take: filtros.limit,
-    });
-
-    return {
-      items: perfis,
-      page: filtros.page,
-      limit: filtros.limit,
-      total,
-    };
+  findAll(filtros: ListarPerfisDto): Promise<ListarPerfisRespostaDto> {
+    return this.repository.listar(filtros);
   }
 
   async findOne(id: number): Promise<PerfilRespostaDto> {
-    const perfil = await this.prisma.perfis.findUnique({
-      where: { id },
-      select: { id: true, nome: true, descricao: true },
-    });
+    const perfil = await this.repository.buscarPorId(id);
 
     if (!perfil) {
       throw new NotFoundException('Perfil não encontrado.');
@@ -63,23 +33,51 @@ export class PerfisService {
     id: number,
     atualizacao: UpdatePerfiDto,
   ): Promise<PerfilRespostaDto> {
-    const perfil = await this.prisma.perfis.findUnique({
-      where: { id },
-      select: { id: true },
-    });
+    const perfil = await this.repository.buscarPorId(id);
 
     if (!perfil) {
       throw new NotFoundException('Perfil não encontrado.');
     }
 
-    return this.prisma.perfis.update({
-      where: { id },
-      data: { descricao: atualizacao.descricao },
-      select: { id: true, nome: true, descricao: true },
-    });
+    return this.repository.atualizarDescricao(id, atualizacao.descricao);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} perfi`;
+  async listarPermissoes(id: number) {
+    const perfil = await this.repository.listarPermissoesDoPerfil(id);
+    if (!perfil) {
+      throw new NotFoundException(`Perfil com ID ${id} não encontrado.`);
+    }
+
+    const permissoes = perfil.perfis_permissoes.map((item) => item.permissoes);
+
+    return { dados: permissoes };
+  }
+
+  async adicionarPermissao(id: number, dto: AdicionarPermissaoPerfilDto) {
+    const perfil = await this.repository.buscarPorId(id);
+    if (!perfil) {
+      throw new NotFoundException(`Perfil com ID ${id} não encontrado.`);
+    }
+
+    const permissao = await this.permissoesRepository.buscarPorId(dto.permissaoId);
+    if (!permissao) {
+      throw new NotFoundException(`Permissão com ID ${dto.permissaoId} não encontrada.`);
+    }
+
+    return this.repository.adicionarPermissao(id, dto.permissaoId);
+  }
+
+  async removerPermissao(perfilId: number, permissaoId: number) {
+    const perfil = await this.repository.buscarPorId(perfilId);
+    if (!perfil) {
+      throw new NotFoundException(`Perfil com ID ${perfilId} não encontrado.`);
+    }
+
+    const permissao = await this.permissoesRepository.buscarPorId(permissaoId);
+    if (!permissao) {
+      throw new NotFoundException(`Permissão com ID ${permissaoId} não encontrada.`);
+    }
+
+    return this.repository.removerPermissao(perfilId, permissaoId);
   }
 }

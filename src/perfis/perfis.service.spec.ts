@@ -1,17 +1,15 @@
 import { NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { PerfisRepository } from './perfis.repository.js';
 import { PerfisService } from './perfis.service.js';
 
 describe('PerfisService', () => {
   const buscarPerfil = vi.fn();
   const atualizarPerfil = vi.fn();
-  const prisma = {
-    perfis: {
-      findUnique: buscarPerfil,
-      update: atualizarPerfil,
-    },
-  } as unknown as PrismaService;
-  const service = new PerfisService(prisma);
+  const repository = {
+    buscarPorId: buscarPerfil,
+    atualizarDescricao: atualizarPerfil,
+  } as unknown as PerfisRepository;
+  const service = new PerfisService(repository);
 
   beforeEach(() => {
     buscarPerfil.mockReset();
@@ -33,11 +31,7 @@ describe('PerfisService', () => {
       nome: 'ALUNO',
       descricao: 'Perfil de aluno',
     });
-    expect(atualizarPerfil).toHaveBeenCalledWith({
-      where: { id: 3 },
-      data: { descricao: 'Perfil de aluno' },
-      select: { id: true, nome: true, descricao: true },
-    });
+    expect(atualizarPerfil).toHaveBeenCalledWith(3, 'Perfil de aluno');
   });
 
   it('informa quando o perfil não existe', async () => {

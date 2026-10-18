@@ -1,22 +1,29 @@
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { AuthRepository } from './auth.repository.js';
 import { AuthService } from './auth.service.js';
 import { SenhasService } from './senhas.service.js';
 
 describe('AuthService', () => {
+  const buscarPerfilAluno = vi.fn();
+  const criarAluno = vi.fn();
   const buscarUsuario = vi.fn();
   const atualizarUsuarios = vi.fn();
+  const salvarRefreshToken = vi.fn();
   const conferirSenha = vi.fn();
   const gerarHash = vi.fn();
   const verificarToken = vi.fn();
   const assinarToken = vi.fn();
-  const prisma = {
-    usuarios: {
-      findUnique: buscarUsuario,
-      updateMany: atualizarUsuarios,
-    },
-  } as unknown as PrismaService;
+  const repository = {
+    buscarPerfilAluno,
+    criarAluno,
+    buscarCredenciais: buscarUsuario,
+    buscarSenha: buscarUsuario,
+    salvarRefreshToken,
+    renovarRefreshToken: atualizarUsuarios,
+    limparRefreshToken: atualizarUsuarios,
+    alterarSenha: atualizarUsuarios,
+  } as unknown as AuthRepository;
   const senhasService = {
     conferirSenha,
     gerarHash,
@@ -25,15 +32,67 @@ describe('AuthService', () => {
     verifyAsync: verificarToken,
     signAsync: assinarToken,
   } as unknown as JwtService;
-  const service = new AuthService(prisma, senhasService, jwtService);
+  const service = new AuthService(repository, senhasService, jwtService);
 
   beforeEach(() => {
+    buscarPerfilAluno.mockReset();
+    criarAluno.mockReset();
     buscarUsuario.mockReset();
     atualizarUsuarios.mockReset();
+    salvarRefreshToken.mockReset();
     conferirSenha.mockReset();
     gerarHash.mockReset();
     verificarToken.mockReset();
     assinarToken.mockReset();
+  });
+
+  it('registra aluno com senha em hash e sem devolvê-la', async () => {
+    buscarPerfilAluno.mockResolvedValueOnce({ id: 3 });
+    gerarHash.mockResolvedValueOnce('hash-da-senha');
+    criarAluno.mockResolvedValueOnce({ id: 2, email: 'aluno@exemplo.com' });
+
+    await expect(
+      service.registrar({ email: ' Aluno@Exemplo.com ', senha: 'senha-segura' }),
+    ).resolves.toEqual({ id: 2, email: 'aluno@exemplo.com', perfil: 'ALUNO' });
+    expect(criarAluno).toHaveBeenCalledWith(
+      'aluno@exemplo.com',
+      'hash-da-senha',
+      3,
+    );
+  });
+
+  it('faz login e guarda o hash do refresh token', async () => {
+    const segredoAnterior = process.env.JWT_REFRESH_SECRET;
+    process.env.JWT_REFRESH_SECRET = 'segredo-de-teste';
+    buscarUsuario.mockResolvedValueOnce({
+      id: 2,
+      senha: 'hash-da-senha',
+      excluido_em: null,
+    });
+    conferirSenha.mockResolvedValueOnce(true);
+    assinarToken
+      .mockResolvedValueOnce('token-de-acesso')
+      .mockResolvedValueOnce('token-de-refresh');
+
+    try {
+      await expect(
+        service.login({ email: ' Aluno@Exemplo.com ', senha: 'senha-segura' }),
+      ).resolves.toMatchObject({
+        access_token: 'token-de-acesso',
+        refresh_token: 'token-de-refresh',
+      });
+      expect(buscarUsuario).toHaveBeenCalledWith('aluno@exemplo.com');
+      expect(salvarRefreshToken).toHaveBeenCalledWith(
+        2,
+        expect.stringMatching(/^[a-f0-9]{64}$/),
+      );
+    } finally {
+      if (segredoAnterior === undefined) {
+        delete process.env.JWT_REFRESH_SECRET;
+      } else {
+        process.env.JWT_REFRESH_SECRET = segredoAnterior;
+      }
+    }
   });
 
   it('não permite login de usuário excluído', async () => {
@@ -63,9 +122,9 @@ describe('AuthService', () => {
         service.refresh({ refresh_token: 'refresh-antigo' }),
       ).rejects.toThrow(UnauthorizedException);
       expect(atualizarUsuarios).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ excluido_em: null }),
-        }),
+        2,
+        expect.any(String),
+        expect.any(String),
       );
     } finally {
       if (segredoAnterior === undefined) {
@@ -80,10 +139,7 @@ describe('AuthService', () => {
     atualizarUsuarios.mockResolvedValueOnce({ count: 1 });
 
     await expect(service.logout(2)).resolves.toBeUndefined();
-    expect(atualizarUsuarios).toHaveBeenCalledWith({
-      where: { id: 2, excluido_em: null },
-      data: { refresh_token_hash: null },
-    });
+    expect(atualizarUsuarios).toHaveBeenCalledWith(2);
   });
 
   it('recusa logout quando o usuário não está mais ativo', async () => {
@@ -109,10 +165,7 @@ describe('AuthService', () => {
     ).resolves.toBeUndefined();
     expect(conferirSenha).toHaveBeenCalledWith('senha-antiga', 'hash-antigo');
     expect(gerarHash).toHaveBeenCalledWith('senha-nova');
-    expect(atualizarUsuarios).toHaveBeenCalledWith({
-      where: { id: 2, senha: 'hash-antigo', excluido_em: null },
-      data: { senha: 'hash-novo', refresh_token_hash: null },
-    });
+    expect(atualizarUsuarios).toHaveBeenCalledWith(2, 'hash-antigo', 'hash-novo');
   });
 
   it('recusa senha atual incorreta', async () => {

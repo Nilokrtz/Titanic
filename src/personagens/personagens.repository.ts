@@ -3,10 +3,35 @@ import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePersonagenDto } from './dto/create-personagen.dto.js';
 import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
+import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
+import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
+import { ListarTentativasPersonagemDto } from './dto/listar-tentativas-personagem.dto.js';
+
 
 @Injectable()
 export class PersonagensRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listarTentativas(personagemId: number, filtros: ListarTentativasPersonagemDto) {
+    const where: Prisma.tentativas_salaWhereInput = {
+      personagem_id: personagemId,
+      sala_id: filtros.sala_id,
+      status: filtros.status,
+    };
+    const page = filtros.page ?? 1;
+    const limit = filtros.limit ?? 10;
+    const [items, total] = await Promise.all([
+      this.prisma.tentativas_sala.findMany({
+        where,
+        include: { salas_desafio: true },
+        orderBy: [{ iniciado_em: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.tentativas_sala.count({ where }),
+    ]);
+    return { items, page, limit, total };
+  }
 
   async buscarUsuarioPorId(usuarioId: number) {
     return this.prisma.usuarios.findUnique({
@@ -119,6 +144,55 @@ export class PersonagensRepository {
     };
   }
 
+  async listarMe(
+  usuarioId: number,
+  filtros: ListarPersonagensMeDto,
+) {
+  const condicoes: Prisma.personagensWhereInput = {
+    usuario_id: usuarioId,
+  };
+
+  if (filtros.nome) {
+    condicoes.nome = {
+      contains: filtros.nome,
+      mode: 'insensitive',
+    };
+  }
+
+  if (filtros.especializacao_id !== undefined) {
+    condicoes.especializacao_id = filtros.especializacao_id;
+  }
+
+  const total = await this.prisma.personagens.count({
+    where: condicoes,
+  });
+
+  const personagens = await this.prisma.personagens.findMany({
+    where: condicoes,
+    select: {
+      id: true,
+      nome: true,
+      usuario_id: true,
+      especializacao_id: true,
+      rank_id: true,
+      xp_atual: true,
+      vida_maxima: true,
+      vida_atual: true,
+      moedas: true,
+    },
+    orderBy: { id: 'asc' },
+    skip: (filtros.page - 1) * filtros.limit,
+    take: filtros.limit,
+  });
+
+  return {
+    items: personagens,
+    page: filtros.page,
+    limit: filtros.limit,
+    total,
+  };
+}
+
   async excluir(id: number) {
     return this.prisma.personagens.deleteMany({ where: { id } });
   }
@@ -128,5 +202,79 @@ export class PersonagensRepository {
       where: { id, usuario_id: usuarioId },
       data: { nome },
     });
+  }
+
+  async listarRankingXp(filtros: RankingXpQueryDto) {
+    const page = filtros.page ?? 1;
+    const limit = filtros.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const condicoes: Prisma.personagensWhereInput = {
+      usuarios: {
+        is: {
+          excluido_em: null,
+        },
+      },
+    };
+
+    if (filtros.especializacao_id !== undefined) {
+      condicoes.especializacao_id = filtros.especializacao_id;
+    }
+
+    if (filtros.rank_id !== undefined) {
+      condicoes.rank_id = filtros.rank_id;
+    }
+
+    const [total, personagens] = await Promise.all([
+      this.prisma.personagens.count({ where: condicoes }),
+      this.prisma.personagens.findMany({
+        where: condicoes,
+        select: {
+          id: true,
+          nome: true,
+          usuario_id: true,
+          especializacao_id: true,
+          rank_id: true,
+          xp_atual: true,
+          vida_maxima: true,
+          vida_atual: true,
+          moedas: true,
+          especializacoes: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          ranks: {
+            select: {
+              id: true,
+              nome: true,
+              nivel_acesso: true,
+            },
+          },
+        },
+        orderBy: [
+          { xp_atual: 'desc' },
+          { id: 'asc' },
+        ],
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const items = personagens.map((p, index) => ({
+      posicao: skip + index + 1,
+      ...p,
+    }));
+
+    const total_paginas = Math.ceil(total / limit);
+
+    return {
+      items,
+      page,
+      limit,
+      total,
+      total_paginas,
+    };
   }
 }

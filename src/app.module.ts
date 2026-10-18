@@ -15,9 +15,10 @@ import { QuizQuestoesModule } from './quiz_questoes/quiz_questoes.module.js';
 import { TentativasSalaModule } from './tentativas_sala/tentativas_sala.module.js';
 import { EspecializacoesModule } from './especializacoes/especializacoes.module.js';
 import { EventosModule } from './eventos/eventos.module.js';
+import { PermissoesModule } from './permissoes/permissoes.module.js';
 
 @Module({
-  imports: [AuthModule, UsuariosModule, PerfisModule, RanksModule, PersonagensModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule, EspecializacoesModule, EventosModule],
+  imports: [AuthModule, UsuariosModule, PerfisModule, RanksModule, PersonagensModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule, EspecializacoesModule, EventosModule, PermissoesModule],
   controllers: [AppController],
   providers: [AppService, { provide: APP_FILTER, useClass: PrismaExceptionFilter }],
 })

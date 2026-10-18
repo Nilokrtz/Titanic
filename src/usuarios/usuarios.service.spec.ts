@@ -6,35 +6,30 @@ import {
 } from '@nestjs/common';
 import { SenhasService } from '../auth/senhas.service.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { UsuariosRepository } from './usuarios.repository.js';
 import { UsuariosService } from './usuarios.service.js';
 
 describe('UsuariosService', () => {
   const buscarUsuario = vi.fn();
-  const contarUsuarios = vi.fn();
   const listarUsuarios = vi.fn();
   const buscarPerfil = vi.fn();
   const criarUsuario = vi.fn();
   const atualizarUsuario = vi.fn();
   const excluirUsuario = vi.fn();
   const gerarHash = vi.fn();
-  const prisma = {
-    perfis: { findUnique: buscarPerfil },
-    usuarios: {
-      findUnique: buscarUsuario,
-      count: contarUsuarios,
-      findMany: listarUsuarios,
-      create: criarUsuario,
-      update: atualizarUsuario,
-      updateMany: excluirUsuario,
-    },
-  } as unknown as PrismaService;
+  const repository = {
+    buscarPerfil,
+    buscarUsuario,
+    listar: listarUsuarios,
+    criar: criarUsuario,
+    atualizar: atualizarUsuario,
+    excluir: excluirUsuario,
+  } as unknown as UsuariosRepository;
   const senhasService = { gerarHash } as unknown as SenhasService;
-  const service = new UsuariosService(prisma, senhasService);
+  const service = new UsuariosService(repository, senhasService);
 
   beforeEach(() => {
     buscarUsuario.mockReset();
-    contarUsuarios.mockReset();
     listarUsuarios.mockReset();
     buscarPerfil.mockReset();
     criarUsuario.mockReset();
@@ -64,15 +59,7 @@ describe('UsuariosService', () => {
       perfil: 'ALUNO',
     });
     expect(gerarHash).toHaveBeenCalledWith('senha-segura');
-    expect(criarUsuario).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: {
-          email: 'aluno@exemplo.com',
-          senha: 'hash-da-senha',
-          perfis: { connect: { id: 3 } },
-        },
-      }),
-    );
+    expect(criarUsuario).toHaveBeenCalledWith('aluno@exemplo.com', 'hash-da-senha', 3);
   });
 
   it('rejeita perfil inexistente', async () => {
@@ -119,17 +106,9 @@ describe('UsuariosService', () => {
       perfil: 'ALUNO',
     });
     expect(gerarHash).not.toHaveBeenCalled();
-    expect(atualizarUsuario).toHaveBeenCalledWith({
-      where: { id: 2 },
-      data: {
-        email: 'aluno@exemplo.com',
-        perfis: { connect: { id: 3 } },
-      },
-      select: {
-        id: true,
-        email: true,
-        perfis: { select: { nome: true } },
-      },
+    expect(atualizarUsuario).toHaveBeenCalledWith(2, {
+      email: 'aluno@exemplo.com',
+      perfis: { connect: { id: 3 } },
     });
   });
 
@@ -150,16 +129,12 @@ describe('UsuariosService', () => {
     });
 
     expect(gerarHash).toHaveBeenCalledWith('nova-senha');
-    expect(atualizarUsuario).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: {
-          email: 'aluno@exemplo.com',
-          perfis: { connect: { id: 3 } },
-          senha: 'novo-hash',
-          refresh_token_hash: null,
-        },
-      }),
-    );
+    expect(atualizarUsuario).toHaveBeenCalledWith(2, {
+      email: 'aluno@exemplo.com',
+      perfis: { connect: { id: 3 } },
+      senha: 'novo-hash',
+      refresh_token_hash: null,
+    });
   });
 
   it('rejeita atualização de usuário inexistente', async () => {
@@ -201,15 +176,16 @@ describe('UsuariosService', () => {
     buscarUsuario.mockResolvedValueOnce({
       perfis: { nome: 'ADMIN_PROFESSOR' },
     });
-    contarUsuarios.mockResolvedValueOnce(6);
-    listarUsuarios.mockResolvedValueOnce([
-      {
-        id: 2,
-        email: 'aluno@exemplo.com',
-        senha: 'hash',
-        perfis: { nome: 'ALUNO' },
-      },
-    ]);
+    listarUsuarios.mockResolvedValueOnce({
+      total: 6,
+      usuarios: [
+        {
+          id: 2,
+          email: 'aluno@exemplo.com',
+          perfis: { nome: 'ALUNO' },
+        },
+      ],
+    });
 
     await expect(
       service.findAll(
@@ -222,16 +198,12 @@ describe('UsuariosService', () => {
       limit: 5,
       total: 6,
     });
-    expect(contarUsuarios).toHaveBeenCalledWith({
-      where: {
-        excluido_em: null,
-        perfil_id: 3,
-        email: { contains: 'aluno', mode: 'insensitive' },
-      },
+    expect(listarUsuarios).toHaveBeenCalledWith({
+      page: 2,
+      limit: 5,
+      perfil_id: 3,
+      email: 'aluno',
     });
-    expect(listarUsuarios).toHaveBeenCalledWith(
-      expect.objectContaining({ skip: 5, take: 5 }),
-    );
   });
 
   it('impede um aluno de listar usuários', async () => {
@@ -240,7 +212,7 @@ describe('UsuariosService', () => {
     await expect(
       service.findAll({ page: 1, limit: 10 }, 2),
     ).rejects.toThrow(ForbiddenException);
-    expect(contarUsuarios).not.toHaveBeenCalled();
+    expect(listarUsuarios).not.toHaveBeenCalled();
   });
 
   it('rejeita a listagem quando o usuário da sessão não existe', async () => {
@@ -320,13 +292,7 @@ describe('UsuariosService', () => {
     excluirUsuario.mockResolvedValueOnce({ count: 1 });
 
     await expect(service.remove(2)).resolves.toBeUndefined();
-    expect(excluirUsuario).toHaveBeenCalledWith({
-      where: { id: 2, excluido_em: null },
-      data: {
-        excluido_em: expect.any(Date),
-        refresh_token_hash: null,
-      },
-    });
+    expect(excluirUsuario).toHaveBeenCalledWith(2);
   });
 
   it('responde 404 se o usuário já foi excluído ou não existe', async () => {

@@ -1,12 +1,5 @@
-import { Controller, Get, Post, Body, Put,
-         Param, Delete, Query, UseGuards,
-          ParseIntPipe,
-         } from '@nestjs/common';
-
-import{ ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse,
-        ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, 
-         ApiParam, ApiTags, ApiUnauthorizedResponse, } from '@nestjs/swagger';
-
+import { Controller, Get, Post, Body, Put, Param, Delete, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
+import{ ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse, } from '@nestjs/swagger';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -39,15 +32,19 @@ export class ItensController {
   }
 
   @Get()
-   @ApiOperation({ summary: 'Lista itens da loja com paginacao e filtros' })
-   @ApiOkResponse({ type: ListarItensRespostaDto }) 
-   @ApiBadRequestResponse({ description: 'Filtros invalidos.' }) 
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Lista itens da loja com paginacao e filtros' })
+  @ApiOkResponse({ type: ListarItensRespostaDto }) 
+  @ApiBadRequestResponse({ description: 'Filtros invalidos.' }) 
   findAll(@Query() filtros: FindItensQueryDto) {
     return this.itensService.findAll(filtros);
   }
 
 
   @Get(':id')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Consulta um item pelo ID' })
   @ApiParam({ name: 'id', type: Number }) 
   @ApiOkResponse({ type: ItemRespostaDto })

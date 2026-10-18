@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
+import argon2 from 'argon2';
 
 const urlBanco = process.env.DATABASE_URL;
 
@@ -27,7 +28,7 @@ async function main(){
     create: { nome: 'ALUNO', descricao: 'Perfil de Jogador'},
   });
 
-  await prisma.perfis.upsert({
+  const perfilMonitor = await prisma.perfis.upsert({
     where: { nome: 'MONITOR' },
     update: {},
     create: { nome: 'MONITOR', descricao: 'Perfil de Monitor' },
@@ -74,23 +75,52 @@ async function main(){
     },
   });
 
+  const senhaNiloHash = await argon2.hash('senhanilo');
+  const senhaAdminHash = await argon2.hash('senhaadmin');
+  const senhaMonitorHash = await argon2.hash('senhamonitor');
+
   const usuarioTeste = await prisma.usuarios.upsert({
     where: { email: 'nilo@cefet.br' },
-    update: {},
+    update: {
+      senha: senhaNiloHash,
+      perfil_id: perfilAluno.id,
+      refresh_token_hash: null,
+      excluido_em: null,
+    },
     create: {
-    email: 'nilo@cefet.br',
-    senha: 'senhanilo',
-    perfil_id: perfilAluno.id,
+      email: 'nilo@cefet.br',
+      senha: senhaNiloHash,
+      perfil_id: perfilAluno.id,
     },
   })
 
   const usuarioAdmin = await prisma.usuarios.upsert({
     where: { email: 'admin@cefet.br' },
-    update: {},
+    update: {
+      senha: senhaAdminHash,
+      perfil_id: perfilAdmin.id,
+      refresh_token_hash: null,
+      excluido_em: null,
+    },
     create: {
       email: 'admin@cefet.br',
-      senha: 'senhaadmin', 
+      senha: senhaAdminHash,
       perfil_id: perfilAdmin.id,
+    },
+  });
+
+  await prisma.usuarios.upsert({
+    where: { email: 'monitor@cefet.br' },
+    update: {
+      senha: senhaMonitorHash,
+      perfil_id: perfilMonitor.id,
+      refresh_token_hash: null,
+      excluido_em: null,
+    },
+    create: {
+      email: 'monitor@cefet.br',
+      senha: senhaMonitorHash,
+      perfil_id: perfilMonitor.id,
     },
   });
 

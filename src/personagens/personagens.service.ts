@@ -6,6 +6,10 @@ import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
 import { ListarPersonagensRespostaDto } from './dto/listar-personagens-resposta.dto.js';
 import { PersonagemRespostaDto } from './dto/personagem-resposta.dto.js';
 import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
+import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
+import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
+import { RankingXpRespostaDto } from './dto/ranking-xp-resposta.dto.js';
+import { ListarTentativasPersonagemDto } from './dto/listar-tentativas-personagem.dto.js';
 
 @Injectable()
 export class PersonagensService {
@@ -73,6 +77,10 @@ export class PersonagensService {
     return this.repository.listar(filtros);
   }
 
+  rankingXp(filtros: RankingXpQueryDto): Promise<RankingXpRespostaDto> {
+    return this.repository.listarRankingXp(filtros);
+  }
+
   async findOne(id: number, usuarioId: number): Promise<PersonagemRespostaDto> {
     const usuario = await this.repository.buscarPerfilDoUsuario(usuarioId);
 
@@ -98,6 +106,36 @@ export class PersonagensService {
 
     return personagem;
   }
+
+  async listarTentativas(
+    personagemId: number,
+    usuarioId: number,
+    filtros: ListarTentativasPersonagemDto,
+  ) {
+    if (
+      !Number.isSafeInteger(personagemId) ||
+      personagemId < 1 ||
+      personagemId > 2147483647
+    ) {
+      throw new BadRequestException('ID do personagem inválido.');
+    }
+
+    await this.findOne(personagemId, usuarioId);
+    return this.repository.listarTentativas(personagemId, filtros);
+  }
+
+  async findMe(
+  usuarioId: number,
+  filtros: ListarPersonagensMeDto,
+): Promise<ListarPersonagensRespostaDto> {
+  const usuario = await this.repository.buscarPerfilDoUsuario(usuarioId);
+
+  if (!usuario || usuario.excluido_em) {
+    throw new UnauthorizedException('Sessão inválida.');
+  }
+
+  return this.repository.listarMe(usuarioId, filtros);
+}
 
   async update(
     id: number,
