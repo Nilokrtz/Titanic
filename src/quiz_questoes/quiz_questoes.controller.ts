@@ -30,7 +30,7 @@ export class QuizQuestoesController {
 
   @Get()
   @UseGuards(AutenticacaoGuard, RolesGuard)
-  @Roles(tipo_perfil.ADMIN_PROFESSOR, tipo_perfil.MONITOR, tipo_perfil.ALUNO)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR, tipo_perfil.MONITOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Lista questões com paginação e filtros' })
   @ApiOkResponse({ description: 'Lista paginada de questões retornada com sucesso.' })
@@ -42,7 +42,7 @@ export class QuizQuestoesController {
 
   @Get(':id')
   @UseGuards(AutenticacaoGuard, RolesGuard)
-  @Roles(tipo_perfil.ADMIN_PROFESSOR, tipo_perfil.MONITOR, tipo_perfil.ALUNO)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR, tipo_perfil.MONITOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Consulta os detalhes de uma questão pelo ID' })
   @ApiParam({ name: 'id', type: Number, description: 'ID da questão' })

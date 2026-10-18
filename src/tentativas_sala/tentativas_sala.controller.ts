@@ -1,34 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiNotFoundResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse} from '@nestjs/swagger';
+import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { TentativasSalaService } from './tentativas_sala.service.js';
 import { CreateTentativasSalaDto } from './dto/create-tentativas_sala.dto.js';
-import { UpdateTentativasSalaDto } from './dto/update-tentativas_sala.dto.js';
 
-@Controller('tentativas-sala')
+@ApiTags('Tentativas Sala')
+@Controller('tentativas')
 export class TentativasSalaController {
   constructor(private readonly tentativasSalaService: TentativasSalaService) {}
 
   @Post()
-  create(@Body() createTentativasSalaDto: CreateTentativasSalaDto) {
-    return this.tentativasSalaService.create(createTentativasSalaDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.tentativasSalaService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tentativasSalaService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTentativasSalaDto: UpdateTentativasSalaDto) {
-    return this.tentativasSalaService.update(+id, updateTentativasSalaDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tentativasSalaService.remove(+id);
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Registra/inicia uma nova tentativa em uma sala' })
+  @ApiCreatedResponse({ description: 'Tentativa registrada com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiNotFoundResponse({ description: 'Personagem ou Sala de desafio não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  create(@Body() createDto: CreateTentativasSalaDto) {
+    return this.tentativasSalaService.create(createDto);
   }
 }

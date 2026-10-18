@@ -1,26 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { TentativasSalaRepository } from './tentativas_sala.repository.js';
 import { CreateTentativasSalaDto } from './dto/create-tentativas_sala.dto.js';
-import { UpdateTentativasSalaDto } from './dto/update-tentativas_sala.dto.js';
 
 @Injectable()
 export class TentativasSalaService {
-  create(createTentativasSalaDto: CreateTentativasSalaDto) {
-    return 'This action adds a new tentativasSala';
-  }
+  constructor(private readonly repository: TentativasSalaRepository) {}
 
-  findAll() {
-    return `This action returns all tentativasSala`;
-  }
+  async create(createDto: CreateTentativasSalaDto) {
+    if (createDto.personagem_id) {
+      const personagem = await this.repository.buscarPersonagemPorId(createDto.personagem_id);
+      if (!personagem) {
+        throw new NotFoundException('Personagem informado não foi encontrado.');
+      }
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} tentativasSala`;
-  }
+    if (createDto.sala_id) {
+      const sala = await this.repository.buscarSalaPorId(createDto.sala_id);
+      if (!sala) {
+        throw new NotFoundException('Sala de desafio informada não foi encontrada.');
+      }
+    }
 
-  update(id: number, updateTentativasSalaDto: UpdateTentativasSalaDto) {
-    return `This action updates a #${id} tentativasSala`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} tentativasSala`;
+    return this.repository.criar(createDto);
   }
 }
