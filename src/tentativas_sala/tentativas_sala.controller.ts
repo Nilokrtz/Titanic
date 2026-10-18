@@ -104,4 +104,43 @@ export class TentativasSalaController {
   verificarFlawless(@Param('personagemId', ParseIntPipe) personagemId: number) {
     return this.tentativasSalaService.verificarEasterEggFlawless(personagemId);
   }
+
+  @Post(':id/ajuda/dica')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Consome item Dica e retorna pista da questao atual' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da tentativa' })
+  @ApiOkResponse({ description: 'Dica revelada com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Partida inativa, Boss Final ou personagem sem item de dica.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou invalido.' })
+  @ApiNotFoundResponse({ description: 'Tentativa nao encontrada.' })
+  usarAjudaDica(@Param('id', ParseIntPipe) id: number) {
+    return this.tentativasSalaService.usarAjudaDica(id);
+  }
+
+  @Post(':id/ajuda/cartas')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Consome item Cartas e elimina 2 alternativas incorretas' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da tentativa' })
+  @ApiOkResponse({ description: 'Alternativas eliminadas com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Partida inativa, Boss Final ou personagem sem item de cartas.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou invalido.' })
+  @ApiNotFoundResponse({ description: 'Tentativa nao encontrada.' })
+  usarAjudaCartas(@Param('id', ParseIntPipe) id: number) {
+    return this.tentativasSalaService.usarAjudaCartas(id);
+  }
+
+  @Post(':id/ajuda/pular')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Consome item Pular e troca de questao sem sofrer dano' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da tentativa' })
+  @ApiOkResponse({ description: 'Questao pulada com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Sem pulos restantes, Boss Final, sem item ou sem outra questao na sala.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou invalido.' })
+  @ApiNotFoundResponse({ description: 'Tentativa nao encontrada.' })
+  usarAjudaPular(@Param('id', ParseIntPipe) id: number) {
+    return this.tentativasSalaService.usarAjudaPular(id);
+  }
 }

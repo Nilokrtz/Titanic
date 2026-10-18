@@ -177,6 +177,7 @@ export class InventarioItensController {
     summary: 'Lista os itens da mochila do personagem com paginação e filtros',
   })
   @ApiParam({ name: 'personagemId', type: Number })
+  @ApiOkResponse({ description: 'Itens da mochila listados com sucesso.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   listarMochila(
     @Param('personagemId') paramPersonagemId: string | undefined,
