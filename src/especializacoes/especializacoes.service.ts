@@ -40,8 +40,16 @@ export class EspecializacoesService {
     return especializacoe;
   }
 
-  update(id: number, updateEspecializacoeDto: UpdateEspecializacoeDto) {
-    return `This action updates a #${id} especializacoe`;
+  async update(id: number, dados: UpdateEspecializacoeDto) {
+    await this.findOne(id); 
+
+    if(dados.nome !== undefined) {
+      const especializacaoComMesmoNome = await this.repository.buscarPorNome(dados.nome);
+      if (especializacaoComMesmoNome && especializacaoComMesmoNome.id !== id) {
+        throw new BadRequestException(`A especialização "${dados.nome}" já está em uso.`);
+      }
+    }  
+    return await this.repository.atualizar(id, dados);
   }
 
   remove(id: number) {

@@ -60,6 +60,12 @@ export class EspecializacoesRepository {
         });
     }
 
+    async atualizar(id: number, dados: UpdateEspecializacoeDto) {
+        return this.prisma.especializacoes.update({
+            where: { id },
+            data: dados,
+        });
+    }
 
 } 
 

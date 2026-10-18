@@ -50,8 +50,18 @@ export class EspecializacoesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEspecializacoeDto: UpdateEspecializacoeDto) {
-    return this.especializacoesService.update(+id, updateEspecializacoeDto);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Atualiza os dados de uma especialização' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da especialização', example: 1 })
+  @ApiOkResponse({ description: 'Especialização atualizada com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiNotFoundResponse({ description: 'Especialização não encontrada para o ID informado.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  update(@Param('id', ParseIntPipe) id: number, @Body() dados: UpdateEspecializacoeDto) {
+    return this.especializacoesService.update(id, dados);
   }
 
   @Delete(':id')
