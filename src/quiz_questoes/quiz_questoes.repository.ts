@@ -77,4 +77,10 @@ export class QuizQuestoesRepository {
       include: {salas_desafio: true},
     });
   }
+
+  async remover(id: number) {
+    return this.prisma.quiz_questoes.delete({
+      where: { id }
+    });
+  }
 }

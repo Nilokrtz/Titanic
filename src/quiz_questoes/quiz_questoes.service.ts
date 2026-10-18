@@ -42,4 +42,10 @@ export class QuizQuestoesService {
 
     return this.repository.atualizar(id, updateDto);
   }
+
+  async remove(id: number) {
+    await this.findById(id);
+    await this.repository.remover(id);
+    return { mensagem: 'Questão removida com sucesso.' };
+  }
 }

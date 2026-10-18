@@ -1,4 +1,4 @@
-import { Controller, Post,Get, Body, UseGuards, Query, ParseIntPipe, Param, Patch } from '@nestjs/common';
+import { Controller, Post,Get, Body, UseGuards, Query, ParseIntPipe, Param, Patch, Delete } from '@nestjs/common';
 import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiNotFoundResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse, ApiOkResponse, ApiParam} from '@nestjs/swagger';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
@@ -66,5 +66,19 @@ export class QuizQuestoesController {
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
   update(@Param('id', ParseIntPipe) id: number,@Body() updateDto: UpdateQuizQuestoesDto) {
     return this.quizQuestoesService.update(id, updateDto);
+  }
+
+  @Delete(':id')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Remove uma questão (Apenas Professores/Admins)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da questão' })
+  @ApiOkResponse({ description: 'Questão removida com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Questão não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.quizQuestoesService.remove(id);
   }
 }
