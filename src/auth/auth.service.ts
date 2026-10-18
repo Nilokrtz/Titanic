@@ -8,7 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { createHash, randomUUID } from 'node:crypto';
 import { Prisma } from '../generated/prisma/client.js';
-import { PrismaService } from '../prisma/prisma.service.js';
+import { AuthRepository } from './auth.repository.js';
 import { AlterarSenhaDto } from './dto/alterar-senha.dto.js';
 import { RegistrarDto } from './dto/registrar.dto.js';
 import { RegistrarRespostaDto } from './dto/registrar-resposta.dto.js';
@@ -21,16 +21,13 @@ import { SenhasService } from './senhas.service.js';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly repository: AuthRepository,
     private readonly senhasService: SenhasService,
     private readonly jwtService: JwtService,
   ) {}
 
   async registrar(registro: RegistrarDto): Promise<RegistrarRespostaDto> {
-    const perfilAluno = await this.prisma.perfis.findUnique({
-      where: { nome: 'ALUNO' },
-      select: { id: true },
-    });
+    const perfilAluno = await this.repository.buscarPerfilAluno();
 
     if (!perfilAluno) {
       throw new InternalServerErrorException('Perfil ALUNO não configurado.');
@@ -40,14 +37,11 @@ export class AuthService {
     const hashSenha = await this.senhasService.gerarHash(registro.senha);
 
     try {
-      const usuario = await this.prisma.usuarios.create({
-        data: {
-          email,
-          senha: hashSenha,
-          perfis: { connect: { id: perfilAluno.id } },
-        },
-        select: { id: true, email: true },
-      });
+      const usuario = await this.repository.criarAluno(
+        email,
+        hashSenha,
+        perfilAluno.id,
+      );
 
       return { id: usuario.id, email: usuario.email, perfil: 'ALUNO' };
     } catch (erro) {
@@ -64,10 +58,7 @@ export class AuthService {
 
   async login(credenciais: LoginDto): Promise<LoginRespostaDto> {
     const email = credenciais.email.trim().toLowerCase();
-    const usuario = await this.prisma.usuarios.findUnique({
-      where: { email },
-      select: { id: true, senha: true, excluido_em: true },
-    });
+    const usuario = await this.repository.buscarCredenciais(email);
 
     if (
       !usuario ||
@@ -82,10 +73,10 @@ export class AuthService {
 
     const tokens = await this.gerarTokens(usuario.id);
 
-    await this.prisma.usuarios.update({
-      where: { id: usuario.id },
-      data: { refresh_token_hash: this.hashToken(tokens.refresh_token) },
-    });
+    await this.repository.salvarRefreshToken(
+      usuario.id,
+      this.hashToken(tokens.refresh_token),
+    );
 
     return tokens;
   }
@@ -112,14 +103,11 @@ export class AuthService {
     }
 
     const novosTokens = await this.gerarTokens(conteudo.sub);
-    const atualizacao = await this.prisma.usuarios.updateMany({
-      where: {
-        id: conteudo.sub,
-        excluido_em: null,
-        refresh_token_hash: this.hashToken(solicitacao.refresh_token),
-      },
-      data: { refresh_token_hash: this.hashToken(novosTokens.refresh_token) },
-    });
+    const atualizacao = await this.repository.renovarRefreshToken(
+      conteudo.sub,
+      this.hashToken(solicitacao.refresh_token),
+      this.hashToken(novosTokens.refresh_token),
+    );
 
     if (atualizacao.count !== 1) {
       throw new UnauthorizedException('Refresh token inválido.');
@@ -129,10 +117,7 @@ export class AuthService {
   }
 
   async logout(usuarioId: number): Promise<void> {
-    const atualizacao = await this.prisma.usuarios.updateMany({
-      where: { id: usuarioId, excluido_em: null },
-      data: { refresh_token_hash: null },
-    });
+    const atualizacao = await this.repository.limparRefreshToken(usuarioId);
 
     if (atualizacao.count !== 1) {
       throw new UnauthorizedException('Sessão inválida.');
@@ -143,10 +128,7 @@ export class AuthService {
     usuarioId: number,
     alteracao: AlterarSenhaDto,
   ): Promise<void> {
-    const usuario = await this.prisma.usuarios.findUnique({
-      where: { id: usuarioId },
-      select: { senha: true, excluido_em: true },
-    });
+    const usuario = await this.repository.buscarSenha(usuarioId);
 
     if (!usuario || usuario.excluido_em) {
       throw new UnauthorizedException('Sessão inválida.');
@@ -166,10 +148,11 @@ export class AuthService {
     }
 
     const novoHash = await this.senhasService.gerarHash(alteracao.nova_senha);
-    const atualizacao = await this.prisma.usuarios.updateMany({
-      where: { id: usuarioId, senha: usuario.senha, excluido_em: null },
-      data: { senha: novoHash, refresh_token_hash: null },
-    });
+    const atualizacao = await this.repository.alterarSenha(
+      usuarioId,
+      usuario.senha,
+      novoHash,
+    );
 
     if (atualizacao.count !== 1) {
       throw new UnauthorizedException('Sessão inválida.');
@@ -177,15 +160,7 @@ export class AuthService {
   }
 
   async me(usuarioId: number): Promise<MeRespostaDto> {
-    const usuario = await this.prisma.usuarios.findUnique({
-      where: { id: usuarioId },
-      select: {
-        id: true,
-        email: true,
-        excluido_em: true,
-        perfis: { select: { nome: true } },
-      },
-    });
+    const usuario = await this.repository.buscarDados(usuarioId);
 
     if (!usuario || usuario.excluido_em) {
       throw new UnauthorizedException('Sessão inválida.');
