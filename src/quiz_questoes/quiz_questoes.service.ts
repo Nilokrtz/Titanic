@@ -4,6 +4,8 @@ import { CreateQuizQuestoesDto } from './dto/create-quiz_questoes.dto.js';
 import { FindQuizQuestoesQueryDto } from './dto/find-quiz-questoes-query.dto.js';
 import { UpdateQuizQuestoesDto } from './dto/update-quiz_questoes.dto.js';
 
+type Alternativa = { chave: string; texto: string };
+
 @Injectable()
 export class QuizQuestoesService {
   constructor(private readonly repository: QuizQuestoesRepository) {}
@@ -47,5 +49,62 @@ export class QuizQuestoesService {
     await this.findById(id);
     await this.repository.remover(id);
     return { mensagem: 'Questão removida com sucesso.' };
+  }
+
+  async obterQuestaoFormatada(questaoId: number, atributoFocoPersonagem?: string) {
+    const questao = await this.repository.buscarQuestaoPorId(questaoId);
+    if (!questao) {
+      throw new NotFoundException('Questão não encontrada.');
+    }
+
+    const isEspecialista =
+      !!atributoFocoPersonagem && questao.topico_atributo === atributoFocoPersonagem;
+
+    const alternativasCompletas: Alternativa[] = [
+      { chave: 'A', texto: questao.opcao_a },
+      { chave: 'B', texto: questao.opcao_b },
+      { chave: 'C', texto: questao.opcao_c },
+      { chave: 'D', texto: questao.opcao_d },
+    ];
+
+    if (!isEspecialista) {
+      return {
+        id: questao.id,
+        enunciado: questao.enunciado,
+        alternativas: alternativasCompletas,
+        isEspecialista: false,
+      };
+    }
+
+    const letraCorreta = questao.resposta_correta?.toUpperCase();
+
+    const alternativaCorreta =
+      alternativasCompletas.find((alt) => alt.chave === letraCorreta) || alternativasCompletas[0];
+
+    const alternativasIncorretas = alternativasCompletas.filter(
+      (alt) => alt.chave !== alternativaCorreta.chave,
+    );
+
+    const incorretasSelecionadas = alternativasIncorretas.slice(0, 2);
+
+    const tresOpcoesEmbaralhadas = [alternativaCorreta, ...incorretasSelecionadas].sort(
+      () => Math.random() - 0.5,
+    );
+
+    const tresOpcoes = tresOpcoesEmbaralhadas.map((item: Alternativa, index: number) => {
+      const novasChaves = ['A', 'B', 'C'];
+      return {
+        chave: novasChaves[index],
+        texto: item.texto,
+        chaveOriginal: item.chave, 
+      };
+    });
+
+    return {
+      id: questao.id,
+      enunciado: questao.enunciado,
+      alternativas: tresOpcoes,
+      isEspecialista: true,
+    };
   }
 }

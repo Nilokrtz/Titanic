@@ -83,4 +83,10 @@ export class QuizQuestoesRepository {
       where: { id }
     });
   }
+
+  async buscarQuestaoPorId(questaoId: number) {
+    return this.prisma.quiz_questoes.findUnique({
+      where: { id: questaoId },
+    });
+  }
 }
