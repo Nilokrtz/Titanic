@@ -7,6 +7,8 @@ import { ListarPersonagensRespostaDto } from './dto/listar-personagens-resposta.
 import { PersonagemRespostaDto } from './dto/personagem-resposta.dto.js';
 import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
 import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
+import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
+import { RankingXpRespostaDto } from './dto/ranking-xp-resposta.dto.js';
 
 @Injectable()
 export class PersonagensService {
@@ -72,6 +74,10 @@ export class PersonagensService {
 
   findAll(filtros: ListarPersonagensDto): Promise<ListarPersonagensRespostaDto> {
     return this.repository.listar(filtros);
+  }
+
+  rankingXp(filtros: RankingXpQueryDto): Promise<RankingXpRespostaDto> {
+    return this.repository.listarRankingXp(filtros);
   }
 
   async findOne(id: number, usuarioId: number): Promise<PersonagemRespostaDto> {

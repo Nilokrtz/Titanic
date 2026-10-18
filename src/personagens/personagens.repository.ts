@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePersonagenDto } from './dto/create-personagen.dto.js';
 import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
 import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
+import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
 
 
 @Injectable()
@@ -179,5 +180,79 @@ export class PersonagensRepository {
       where: { id, usuario_id: usuarioId },
       data: { nome },
     });
+  }
+
+  async listarRankingXp(filtros: RankingXpQueryDto) {
+    const page = filtros.page ?? 1;
+    const limit = filtros.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const condicoes: Prisma.personagensWhereInput = {
+      usuarios: {
+        is: {
+          excluido_em: null,
+        },
+      },
+    };
+
+    if (filtros.especializacao_id !== undefined) {
+      condicoes.especializacao_id = filtros.especializacao_id;
+    }
+
+    if (filtros.rank_id !== undefined) {
+      condicoes.rank_id = filtros.rank_id;
+    }
+
+    const [total, personagens] = await Promise.all([
+      this.prisma.personagens.count({ where: condicoes }),
+      this.prisma.personagens.findMany({
+        where: condicoes,
+        select: {
+          id: true,
+          nome: true,
+          usuario_id: true,
+          especializacao_id: true,
+          rank_id: true,
+          xp_atual: true,
+          vida_maxima: true,
+          vida_atual: true,
+          moedas: true,
+          especializacoes: {
+            select: {
+              id: true,
+              nome: true,
+            },
+          },
+          ranks: {
+            select: {
+              id: true,
+              nome: true,
+              nivel_acesso: true,
+            },
+          },
+        },
+        orderBy: [
+          { xp_atual: 'desc' },
+          { id: 'asc' },
+        ],
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    const items = personagens.map((p, index) => ({
+      posicao: skip + index + 1,
+      ...p,
+    }));
+
+    const total_paginas = Math.ceil(total / limit);
+
+    return {
+      items,
+      page,
+      limit,
+      total,
+      total_paginas,
+    };
   }
 }

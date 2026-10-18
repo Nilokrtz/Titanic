@@ -12,6 +12,8 @@ import { ListarPersonagensRespostaDto } from './dto/listar-personagens-resposta.
 import { PersonagemRespostaDto } from './dto/personagem-resposta.dto.js';
 import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
 import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
+import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
+import { RankingXpRespostaDto } from './dto/ranking-xp-resposta.dto.js';
 
 @ApiTags('Personagens')
 @Controller('personagens')
@@ -87,6 +89,24 @@ findMe(
     filtros,
   );
 }
+
+  @Get('ranking/xp')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Lista o ranking de personagens ordenados por XP (maior para menor)',
+  })
+  @ApiOkResponse({
+    type: RankingXpRespostaDto,
+    description: 'Ranking de personagens por XP retornado com sucesso.',
+  })
+  @ApiBadRequestResponse({ description: 'Filtros ou paginação inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado.' })
+  rankingXp(
+    @Query() filtros: RankingXpQueryDto,
+  ): Promise<RankingXpRespostaDto> {
+    return this.personagensService.rankingXp(filtros);
+  }
 
   @Get(':id')
   @UseGuards(AutenticacaoGuard)
