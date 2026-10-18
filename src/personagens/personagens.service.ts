@@ -2,6 +2,8 @@ import { ConflictException, Injectable, NotFoundException, UnauthorizedException
 import { Prisma } from '../generated/prisma/client.js';
 import { PersonagensRepository } from './personagens.repository.js';
 import { CreatePersonagenDto } from './dto/create-personagen.dto.js';
+import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
+import { ListarPersonagensRespostaDto } from './dto/listar-personagens-resposta.dto.js';
 import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
 
 @Injectable()
@@ -66,8 +68,8 @@ export class PersonagensService {
     }
   }
 
-  findAll() {
-    return `This action returns all personagens`;
+  findAll(filtros: ListarPersonagensDto): Promise<ListarPersonagensRespostaDto> {
+    return this.repository.listar(filtros);
   }
 
   findOne(id: number){
