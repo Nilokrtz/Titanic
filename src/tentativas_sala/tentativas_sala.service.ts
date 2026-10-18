@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { TentativasSalaRepository } from './tentativas_sala.repository.js';
 import { CreateTentativasSalaDto } from './dto/create-tentativas_sala.dto.js';
+import { FindTentativasQueryDto } from './dto/find-tentativas-query.dto.js';
 
 @Injectable()
 export class TentativasSalaService {
@@ -22,5 +23,17 @@ export class TentativasSalaService {
     }
 
     return this.repository.criar(createDto);
+  }
+
+  async findAll(filtros: FindTentativasQueryDto) {
+    return this.repository.listarComFiltrosEPaginacao(filtros);
+  }
+
+  async findById(id: number) {
+    const tentativa = await this.repository.buscarPorId(id);
+    if (!tentativa) {
+      throw new NotFoundException('Tentativa de sala não encontrada.');
+    }
+    return tentativa;
   }
 }
