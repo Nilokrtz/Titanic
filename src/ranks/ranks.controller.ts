@@ -66,8 +66,17 @@ export class RanksController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.ranksService.remove(+id);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Remove um rank pelo ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID do rank', example: 1 })
+  @ApiOkResponse({ description: 'Rank removido com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Rank não encontrado.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.ranksService.remove(id);
 }
 }
 

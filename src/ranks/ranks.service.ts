@@ -81,7 +81,9 @@ export class RanksService {
     return this.repository.atualizar(id, updateRankDto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} rank`;
+  async remove(id: number) {
+    await this.findOne(id);
+    await this.repository.remover(id);
+    return { message: `Rank foi removido com sucesso.` };
   }
 }

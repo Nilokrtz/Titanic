@@ -75,9 +75,14 @@ export class RanksRepository {
       where: { id },
       data,
     });
+  } 
+  
+  async remover(id: number) {
+    return this.prisma.ranks.delete({
+      where: { id },
+    });
 }
-
-  }
+}
 
   
 
