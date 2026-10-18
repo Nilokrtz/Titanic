@@ -14,9 +14,10 @@ import { SalasDesafioModule } from './salas_desafio/salas_desafio.module.js';
 import { QuizQuestoesModule } from './quiz_questoes/quiz_questoes.module.js';
 import { TentativasSalaModule } from './tentativas_sala/tentativas_sala.module.js';
 import { EspecializacoesModule } from './especializacoes/especializacoes.module.js';
+import { PermissoesModule } from './permissoes/permissoes.module.js';
 
 @Module({
-  imports: [AuthModule, UsuariosModule, PerfisModule, RanksModule, PersonagensModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule, EspecializacoesModule],
+  imports: [AuthModule, UsuariosModule, PerfisModule, RanksModule, PersonagensModule, ItensModule, InventarioItensModule, SalasDesafioModule, QuizQuestoesModule, TentativasSalaModule, EspecializacoesModule, PermissoesModule],
   controllers: [AppController],
   providers: [AppService, { provide: APP_FILTER, useClass: PrismaExceptionFilter }],
 })
