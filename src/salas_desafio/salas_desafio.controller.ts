@@ -1,4 +1,4 @@
-import {Controller,Post,Get,Put,Delete,Body,UseGuards, Param, ParseIntPipe} from '@nestjs/common';
+import {Controller,Post,Get,Put,Delete,Body,UseGuards, Param, ParseIntPipe, Query} from '@nestjs/common';
 import { ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse,ApiOkResponse, ApiParam, ApiNotFoundResponse} from '@nestjs/swagger';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
@@ -7,6 +7,7 @@ import { Roles } from '../auth/decorators/roles.decorator.js';
 import { SalasDesafioService } from './salas_desafio.service.js';
 import { CreateSalasDesafioDto } from './dto/create-salas_desafio.dto.js';
 import { UpdateSalasDesafioDto } from './dto/update-salas_desafio.dto.js';
+import { FindSalasQueryDto } from './dto/find-salas-query.dto.js';
 
 @ApiTags('Salas Desafio')
 @Controller('salas')
@@ -33,8 +34,8 @@ export class SalasDesafioController {
   @ApiOperation({ summary: 'Lista todas as salas de desafio disponíveis' })
   @ApiOkResponse({ description: 'Lista de salas retornadas com sucesso' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
-  findAll(){
-    return this.salasDesafioService.findAll();
+  findAll(@Query() filtros: FindSalasQueryDto) {
+    return this.salasDesafioService.findAll(filtros);
   }
 
   @Get(':id')

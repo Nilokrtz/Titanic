@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { SalasDesafioRepository } from './salas_desafio.repository.js';
 import { CreateSalasDesafioDto } from './dto/create-salas_desafio.dto.js';
 import { UpdateSalasDesafioDto } from './dto/update-salas_desafio.dto.js';
+import { FindSalasQueryDto } from './dto/find-salas-query.dto.js';
 
 @Injectable()
 export class SalasDesafioService {
@@ -23,8 +24,8 @@ export class SalasDesafioService {
     return this.repository.criar(createDto);
   }
 
-  async findAll(){
-    return await this.repository.listarTodasAsSalas(); 
+  async findAll(filtros: FindSalasQueryDto) {
+    return this.repository.listarComFiltrosEPaginacao(filtros);
   }
 
   async findById(id: number){
