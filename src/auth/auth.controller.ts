@@ -108,7 +108,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(AutenticacaoGuard)
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Consulta o usuário autenticado' })
   @ApiOkResponse({ type: MeRespostaDto })
   @ApiUnauthorizedResponse({
