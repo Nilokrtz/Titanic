@@ -77,5 +77,14 @@ export class PerfisRepository {
     },
   });
 }
+
+async removerPermissao(perfilId: number, permissaoId: number) {
+    return this.prisma.perfis_permissoes.deleteMany({
+      where: {
+        perfil_id: perfilId,       
+        permissao_id: permissaoId, 
+      },
+    });
+  }
   
 }
