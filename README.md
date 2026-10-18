@@ -40,4 +40,4 @@ docker compose up --build -d
 docker compose exec api npm run db:seed
 ```
 
-O primeiro comando sobe a API e o PostgreSQL e aplica as migrations. O segundo popula um banco novo com os dados iniciais. Depois, abra o Swagger em http://localhost:3000/api.
+O primeiro comando sobe a API e o PostgreSQL e aplica as migrations. o segundo popula um banco novo com os dados iniciais. Depois, abra o Swagger em http://localhost:3000/api.
