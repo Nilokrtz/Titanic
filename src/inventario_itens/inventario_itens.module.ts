@@ -8,5 +8,6 @@ import { InventarioItensController } from './inventario_itens.controller.js';
   imports: [AuthModule, PrismaModule],
   controllers: [InventarioItensController],
   providers: [InventarioItensService],
+  exports: [InventarioItensService],
 })
 export class InventarioItensModule {}
