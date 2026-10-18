@@ -118,4 +118,8 @@ export class PersonagensRepository {
       total,
     };
   }
+
+  async excluir(id: number) {
+    return this.prisma.personagens.deleteMany({ where: { id } });
+  }
 }

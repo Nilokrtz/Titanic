@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNoContentResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
@@ -84,7 +84,18 @@ export class PersonagensController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.personagensService.remove(+id);
+  @HttpCode(204)
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Exclui um personagem, seu inventário e suas tentativas' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiNoContentResponse({ description: 'Personagem excluído.' })
+  @ApiBadRequestResponse({ description: 'ID inválido.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Apenas o professor pode excluir personagens.' })
+  @ApiNotFoundResponse({ description: 'Personagem não encontrado.' })
+  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.personagensService.remove(id);
   }
 }

@@ -103,7 +103,11 @@ export class PersonagensService {
     return `This action updates a #${id} personagen`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} personagen`;
+  async remove(id: number): Promise<void> {
+    const excluidos = await this.repository.excluir(id);
+
+    if (excluidos.count === 0) {
+      throw new NotFoundException('Personagem não encontrado.');
+    }
   }
 }
