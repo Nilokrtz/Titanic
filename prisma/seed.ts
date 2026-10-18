@@ -95,7 +95,7 @@ async function main(){
       xp_atual: 0,
       vida_maxima: 100,
       vida_atual: 100,
-      moedas: 50,
+      moedas: 0,
     },
   });
 

@@ -36,12 +36,14 @@ export class PersonagensRepository {
     });
   }
 
-  async criar(data: CreatePersonagenDto, usuarioId: number, rankId: number) {
+  async criar(personagem: CreatePersonagenDto, usuarioId: number, rankId: number) {
     return this.prisma.personagens.create({
       data: {
-        ...data,
+        nome: personagem.nome,
+        especializacao_id: personagem.especializacao_id,
         usuario_id: usuarioId,
         rank_id: rankId,
+        moedas: 0,
       },
       include: {
         especializacoes: true,

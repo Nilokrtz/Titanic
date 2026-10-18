@@ -68,7 +68,7 @@ model personagens {
   xp_atual          Int?               @default(0)
   vida_maxima       Int?               @default(100)
   vida_atual        Int?               @default(100)
-  moedas            Int?               @default(50)
+  moedas            Int?               @default(0)
   inventario_itens  inventario_itens[]
   especializacoes   especializacoes?   @relation(fields: [especializacao_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   ranks             ranks?             @relation(fields: [rank_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

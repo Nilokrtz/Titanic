@@ -17,10 +17,6 @@ export class PersonagensService {
 
     const especializacaoId = createPersonagenDto.especializacao_id;
 
-    if (especializacaoId === undefined) {
-      throw new NotFoundException('Especialização não encontrada.');
-    }
-
     const especializacao = await this.repository.buscarEspecializacaoPorId(
       especializacaoId,
     );
