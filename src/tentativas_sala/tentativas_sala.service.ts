@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { TentativasSalaRepository } from './tentativas_sala.repository.js';
 import { CreateTentativasSalaDto } from './dto/create-tentativas_sala.dto.js';
 import { FindTentativasQueryDto } from './dto/find-tentativas-query.dto.js';
@@ -7,22 +7,22 @@ import { FindTentativasQueryDto } from './dto/find-tentativas-query.dto.js';
 export class TentativasSalaService {
   constructor(private readonly repository: TentativasSalaRepository) {}
 
-  async create(createDto: CreateTentativasSalaDto) {
-    if (createDto.personagem_id) {
-      const personagem = await this.repository.buscarPersonagemPorId(createDto.personagem_id);
-      if (!personagem) {
-        throw new NotFoundException('Personagem informado não foi encontrado.');
-      }
+  async create(salaId: number, personagemId: number, usuarioId: number) {
+    if (salaId < 1 || personagemId < 1) {
+      throw new BadRequestException('Os IDs da sala e do personagem devem ser positivos.');
     }
 
-    if (createDto.sala_id) {
-      const sala = await this.repository.buscarSalaPorId(createDto.sala_id);
-      if (!sala) {
-        throw new NotFoundException('Sala de desafio informada não foi encontrada.');
-      }
-    }
+    const personagem = await this.validarAcessoSala(
+      personagemId,
+      salaId,
+      usuarioId,
+    );
 
-    return this.repository.criar(createDto);
+    return this.repository.criar({
+      personagem_id: personagemId,
+      sala_id: salaId,
+      vida_restante: personagem.vida_atual ?? 100,
+    });
   }
 
   async findAll(filtros: FindTentativasQueryDto) {
@@ -63,18 +63,24 @@ export class TentativasSalaService {
     return { mensagem: 'Tentativa de sala removida com sucesso.' };
   }
 
-  async validarAcessoSala(personagemId: number, salaId: number) {
+  async validarAcessoSala(personagemId: number, salaId: number, usuarioId: number) {
     const personagem = await this.repository.buscarPersonagemCompleto(personagemId);
     const sala = await this.repository.buscarSalaComRankMinimo(salaId);
 
-    if (!personagem || !sala) {
-      throw new BadRequestException('Personagem ou Sala não encontrados.');
+    if (!personagem) {
+      throw new NotFoundException('Personagem informado não foi encontrado.');
     }
 
-    if (personagem.ranks && sala.ranks) {
-      if (personagem.ranks.nivel_acesso < sala.ranks.nivel_acesso) {
-        throw new BadRequestException(`Senioridade insuficiente! Exige nível de acesso ${sala.ranks.nivel_acesso}.`);
-      }
+    if (!sala) {
+      throw new NotFoundException('Sala de desafio informada não foi encontrada.');
+    }
+
+    if (personagem.usuario_id !== usuarioId) {
+      throw new ForbiddenException('Este personagem não pertence ao usuário autenticado.');
+    }
+
+    if (sala.ranks && (!personagem.ranks || personagem.ranks.nivel_acesso < sala.ranks.nivel_acesso)) {
+      throw new BadRequestException(`Senioridade insuficiente! Exige nível de acesso ${sala.ranks.nivel_acesso}.`);
     }
 
     const jaConcluiu = await this.repository.buscarTentativaConcluida(personagemId, salaId);
@@ -82,7 +88,7 @@ export class TentativasSalaService {
       throw new BadRequestException('Esta sala já foi concluída! O grind de XP e moedas está bloqueado.');
     }
 
-    return { autorizado: true };
+    return personagem;
   }
 
   calcularDano(fase: number, nivelAcessoPersonagem: number, maxNivelAcesso: number, topicoQuestao: string, atributoPenalidade?: string): number {

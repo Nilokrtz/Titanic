@@ -1,5 +1,6 @@
-import { Controller, Post, Body, UseGuards, Get,Patch, Query, ParseIntPipe, Param, Delete } from '@nestjs/common';
-import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiNotFoundResponse,ApiOkResponse,ApiOperation,ApiParam,ApiTags,ApiUnauthorizedResponse,ApiForbiddenResponse} from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards, Get,Patch, Query, ParseIntPipe, Param, Delete, Req } from '@nestjs/common';
+import {ApiBadRequestResponse,ApiBearerAuth,ApiBody,ApiCreatedResponse,ApiNotFoundResponse,ApiOkResponse,ApiOperation,ApiParam,ApiTags,ApiUnauthorizedResponse,ApiForbiddenResponse} from '@nestjs/swagger';
+import type { Request } from 'express';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { TentativasSalaService } from './tentativas_sala.service.js';
 import { CreateTentativasSalaDto } from './dto/create-tentativas_sala.dto.js';
@@ -17,12 +18,27 @@ export class TentativasSalaController {
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Registra/inicia uma nova tentativa em uma sala' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['sala_id', 'personagem_id'],
+      properties: {
+        sala_id: { type: 'integer', minimum: 1, example: 1 },
+        personagem_id: { type: 'integer', minimum: 1, example: 1 },
+      },
+    },
+  })
   @ApiCreatedResponse({ description: 'Tentativa registrada com sucesso.' })
-  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos, ranking insuficiente ou sala já concluída.' })
   @ApiNotFoundResponse({ description: 'Personagem ou Sala de desafio não encontrada.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
-  create(@Body() createDto: CreateTentativasSalaDto) {
-    return this.tentativasSalaService.create(createDto);
+  @ApiForbiddenResponse({ description: 'O personagem não pertence ao usuário autenticado.' })
+  create(
+    @Body('sala_id', ParseIntPipe) salaId: number,
+    @Body('personagem_id', ParseIntPipe) personagemId: number,
+    @Req() requisicao: Request & { usuarioId: number },
+  ) {
+    return this.tentativasSalaService.create(salaId, personagemId, requisicao.usuarioId);
   }
 
   @Get()

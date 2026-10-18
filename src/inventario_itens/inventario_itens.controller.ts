@@ -16,10 +16,13 @@ export class InventarioItensController {
   ) {}
 
   @Get()
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Lista os itens da mochila do personagem com paginação e filtros',
   })
   @ApiParam({ name: 'personagemId', type: Number })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   listarMochila(
     @Param('personagemId', ParseIntPipe) personagemId: number,
     @Query() filtros: FindInventarioQueryDto,
