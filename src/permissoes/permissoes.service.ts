@@ -39,11 +39,26 @@ export class PermissoesService {
     return permissao;
   }
 
-  update(id: number, updatePermissoeDto: UpdatePermissoeDto) {
-    return `This action updates a #${id} permissoe`;
+  async update(id: number, updatePermissoeDto: UpdatePermissoeDto) {
+    await this.findOne(id); 
+
+    if (updatePermissoeDto.slug) {
+    const existente = await this.repository.buscarPorSlug(updatePermissoeDto.slug);
+    if (existente && existente.id !== id) {
+      throw new BadRequestException(`Permissão com slug '${updatePermissoeDto.slug}' já existe.`);
+    }
+  }
+    return this.repository.atualizar(id, updatePermissoeDto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} permissoe`;
+  async remove(id: number) {
+    await this.findOne(id);
+
+    const vinculosAtivos = await this.repository.contarPerfisVinculados(id);
+    if (vinculosAtivos > 0) {
+      throw new BadRequestException(`Não é possível remover a permissão com ID ${id} pois ela está vinculada a perfis.`);
+    }
+    await this.repository.remover(id);
+    return { message: `Permissão com ID ${id} removida com sucesso.` };
   }
 }

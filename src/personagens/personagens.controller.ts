@@ -14,6 +14,7 @@ import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
 import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
 import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
 import { RankingXpRespostaDto } from './dto/ranking-xp-resposta.dto.js';
+import { ListarTentativasPersonagemDto } from './dto/listar-tentativas-personagem.dto.js';
 
 @ApiTags('Personagens')
 @Controller('personagens')
@@ -106,6 +107,24 @@ findMe(
     @Query() filtros: RankingXpQueryDto,
   ): Promise<RankingXpRespostaDto> {
     return this.personagensService.rankingXp(filtros);
+  }
+
+  @Get(':personagemId/tentativas')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Consulta o histórico de tentativas de um personagem' })
+  @ApiParam({ name: 'personagemId', type: Number })
+  @ApiOkResponse({ description: 'Histórico paginado, da tentativa mais recente para a mais antiga. Retorna items, page, limit e total.' })
+  @ApiBadRequestResponse({ description: 'ID, filtros ou paginação inválidos.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou sessão inválida.' })
+  @ApiForbiddenResponse({ description: 'Apenas o dono, professor ou monitor podem consultar este histórico.' })
+  @ApiNotFoundResponse({ description: 'Personagem não encontrado.' })
+  listarTentativas(
+    @Param('personagemId', ParseIntPipe) personagemId: number,
+    @Query() filtros: ListarTentativasPersonagemDto,
+    @Req() requisicao: Request & { usuarioId: number },
+  ) {
+    return this.personagensService.listarTentativas(personagemId, requisicao.usuarioId, filtros);
   }
 
   @Get(':id')

@@ -21,12 +21,6 @@ export class ItensRepository {
     });
   }
 
-  async buscarPorNome(nome: string) {
-    return this.prisma.itens.findFirst({
-      where: { nome },
-    });
-  }
-
   async listarComPaginacao(filtros?: FindItensQueryDto) {
     const condicoes: Prisma.itensWhereInput = {};
 
@@ -65,10 +59,6 @@ export class ItensRepository {
     };
   }
 
-  async listar(filtros?: FindItensQueryDto) {
-    return this.listarComPaginacao(filtros);
-  }
-
   async atualizar(id: number, dados: UpdateItenDto) {
     return this.prisma.itens.update({
       where: { id },
@@ -80,10 +70,6 @@ export class ItensRepository {
     return this.prisma.itens.delete({
       where: { id },
     });
-  }
-
-  async excluir(id: number) {
-    return this.remover(id);
   }
 
   async contarEmInventarios(itemId: number) {

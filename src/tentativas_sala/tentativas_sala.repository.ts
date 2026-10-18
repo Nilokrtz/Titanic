@@ -194,5 +194,91 @@ export class TentativasSalaRepository {
         },
       },
     });
+    return this.prisma.tentativas_sala.findFirst({
+      where: {
+        personagem_id: personagemId,
+        status: 'VITORIA',
+        salas_desafio: {
+          nome: {
+            contains: 'Boss_Final',
+            mode: 'insensitive',
+          },
+        },
+      },
+    });
+  }
+
+  async buscarItemAjudaNaMochila(personagemId: number, tipoEfeito: string) {
+    return this.prisma.inventario_itens.findFirst({
+      where: {
+        personagem_id: personagemId,
+        quantidade: { gte: 1 },
+        itens: {
+          tipo_efeito: {
+            contains: tipoEfeito,
+            mode: 'insensitive',
+          },
+        },
+      },
+      include: { itens: true },
+    });
+  }
+
+  async buscarPrimeiraQuestaoDaSala(salaId: number) {
+    return this.prisma.quiz_questoes.findFirst({
+      where: { sala_id: salaId },
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  async buscarOutraQuestaoDaSala(salaId: number, questaoAtualId: number) {
+    return this.prisma.quiz_questoes.findFirst({
+      where: {
+        sala_id: salaId,
+        id: { not: questaoAtualId },
+      },
+    });
+  }
+
+  async consumirItemDaMochila(itemMochilaId: number, quantidadeAtual: number) {
+    if (quantidadeAtual > 1) {
+      return this.prisma.inventario_itens.update({
+        where: { id: itemMochilaId },
+        data: { quantidade: quantidadeAtual - 1 },
+      });
+    }
+
+    return this.prisma.inventario_itens.delete({
+      where: { id: itemMochilaId },
+    });
+  }
+
+  async pularQuestaoTransacao(
+    tentativaId: number,
+    itemMochilaId: number,
+    quantidadeAtual: number,
+    novaQuestaoId: number,
+    pulosRestantesAtuais: number,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      if (quantidadeAtual > 1) {
+        await tx.inventario_itens.update({
+          where: { id: itemMochilaId },
+          data: { quantidade: quantidadeAtual - 1 },
+        });
+      } else {
+        await tx.inventario_itens.delete({
+          where: { id: itemMochilaId },
+        });
+      }
+
+      return tx.tentativas_sala.update({
+        where: { id: tentativaId },
+        data: {
+          questao_atual_id: novaQuestaoId,
+          pulos_restantes: pulosRestantesAtuais - 1,
+        },
+      });
+    });
   }
 }

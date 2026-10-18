@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePermissoeDto } from './dto/create-permissoe.dto.js';
+import { UpdatePermissoeDto } from './dto/update-permissoe.dto.js';
 import { FindPermissoesQueryDto } from './dto/find-permissoes-query.dto.js';
 import { Prisma } from '../generated/prisma/client.js';
 
@@ -53,4 +54,24 @@ export class PermissoesRepository {
         });
     }
 
-}
+
+
+async atualizar(id: number, dados: UpdatePermissoeDto) {
+            return this.prisma.permissoes.update({
+                where: { id },
+                data: dados,
+            });
+        }
+    
+        async contarPerfisVinculados(permissaoId: number) {
+            return this.prisma.perfis_permissoes.count({
+                where: { permissao_id: permissaoId },
+            });
+        }
+    
+        async remover(id: number) {
+            return this.prisma.permissoes.delete({
+                where: { id },
+            });
+        }
+    }
