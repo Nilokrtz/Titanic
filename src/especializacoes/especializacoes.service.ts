@@ -52,7 +52,9 @@ export class EspecializacoesService {
     return await this.repository.atualizar(id, dados);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} especializacoe`;
+  async remove(id: number) {
+    await this.findOne(id);
+    await this.repository.remover(id);
+    return { message: `Especialização com o ID ${id} foi removida com sucesso.` };
   }
 }

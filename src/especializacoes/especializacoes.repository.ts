@@ -67,6 +67,11 @@ export class EspecializacoesRepository {
         });
     }
 
+    async remover(id: number) {
+        return this.prisma.especializacoes.delete({
+            where: { id },
+        });
+    }
 } 
 
 

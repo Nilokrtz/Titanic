@@ -65,7 +65,16 @@ export class EspecializacoesController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.especializacoesService.remove(+id);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Remove uma especialização pelo ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da especialização', example: 1 })
+  @ApiOkResponse({ description: 'Especialização removida com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Especialização não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.especializacoesService.remove(id);
   }
 }
