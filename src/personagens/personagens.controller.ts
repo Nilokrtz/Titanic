@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req, UseGuards } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
@@ -9,6 +9,7 @@ import { PersonagensService } from './personagens.service.js';
 import { CreatePersonagenDto } from './dto/create-personagen.dto.js';
 import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
 import { ListarPersonagensRespostaDto } from './dto/listar-personagens-resposta.dto.js';
+import { PersonagemRespostaDto } from './dto/personagem-resposta.dto.js';
 import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
 
 @ApiTags('Personagens')
@@ -61,8 +62,20 @@ export class PersonagensController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.personagensService.findOne(+id);
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Consulta um personagem pelo ID' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ type: PersonagemRespostaDto })
+  @ApiBadRequestResponse({ description: 'ID inválido.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Sem permissão para consultar este personagem.' })
+  @ApiNotFoundResponse({ description: 'Personagem não encontrado.' })
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() requisicao: Request & { usuarioId: number },
+  ): Promise<PersonagemRespostaDto> {
+    return this.personagensService.findOne(id, requisicao.usuarioId);
   }
 
   @Patch(':id')

@@ -14,6 +14,16 @@ export class PersonagensRepository {
     });
   }
 
+  async buscarPerfilDoUsuario(usuarioId: number) {
+    return this.prisma.usuarios.findUnique({
+      where: { id: usuarioId },
+      select: {
+        excluido_em: true,
+        perfis: { select: { nome: true } },
+      },
+    });
+  }
+
   async buscarEspecializacaoPorId(especializacaoId: number) {
     return this.prisma.especializacoes.findUnique({
       where: { id: especializacaoId },
@@ -35,6 +45,23 @@ export class PersonagensRepository {
   async buscarPersonagemPorNome(nome: string) {
     return this.prisma.personagens.findUnique({
       where: { nome },
+    });
+  }
+
+  async buscarPersonagemPorId(id: number) {
+    return this.prisma.personagens.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        nome: true,
+        usuario_id: true,
+        especializacao_id: true,
+        rank_id: true,
+        xp_atual: true,
+        vida_maxima: true,
+        vida_atual: true,
+        moedas: true,
+      },
     });
   }
 

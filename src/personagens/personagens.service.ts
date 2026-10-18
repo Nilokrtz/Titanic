@@ -1,9 +1,10 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/client.js';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Prisma, tipo_perfil } from '../generated/prisma/client.js';
 import { PersonagensRepository } from './personagens.repository.js';
 import { CreatePersonagenDto } from './dto/create-personagen.dto.js';
 import { ListarPersonagensDto } from './dto/listar-personagens.dto.js';
 import { ListarPersonagensRespostaDto } from './dto/listar-personagens-resposta.dto.js';
+import { PersonagemRespostaDto } from './dto/personagem-resposta.dto.js';
 import { UpdatePersonagenDto } from './dto/update-personagen.dto.js';
 
 @Injectable()
@@ -72,8 +73,30 @@ export class PersonagensService {
     return this.repository.listar(filtros);
   }
 
-  findOne(id: number){
-    return `This action returns a #${id} personagen`;
+  async findOne(id: number, usuarioId: number): Promise<PersonagemRespostaDto> {
+    const usuario = await this.repository.buscarPerfilDoUsuario(usuarioId);
+
+    if (!usuario || usuario.excluido_em) {
+      throw new UnauthorizedException('Sessão inválida.');
+    }
+
+    const personagem = await this.repository.buscarPersonagemPorId(id);
+
+    if (!personagem) {
+      throw new NotFoundException('Personagem não encontrado.');
+    }
+
+    const perfil = usuario.perfis?.nome;
+
+    if (
+      personagem.usuario_id !== usuarioId &&
+      perfil !== tipo_perfil.ADMIN_PROFESSOR &&
+      perfil !== tipo_perfil.MONITOR
+    ) {
+      throw new ForbiddenException('Sem permissão para consultar este personagem.');
+    }
+
+    return personagem;
   }
 
   update(id: number, updatePersonagenDto: UpdatePersonagenDto) {
