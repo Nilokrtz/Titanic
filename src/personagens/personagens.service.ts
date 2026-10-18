@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Prisma, tipo_perfil } from '../generated/prisma/client.js';
 import { PersonagensRepository } from './personagens.repository.js';
 import { CreatePersonagenDto } from './dto/create-personagen.dto.js';
@@ -99,8 +99,42 @@ export class PersonagensService {
     return personagem;
   }
 
-  update(id: number, updatePersonagenDto: UpdatePersonagenDto) {
-    return `This action updates a #${id} personagen`;
+  async update(
+    id: number,
+    atualizacao: UpdatePersonagenDto,
+    usuarioId: number,
+  ): Promise<PersonagemRespostaDto> {
+    const personagem = await this.repository.buscarPersonagemPorId(id);
+
+    if (!personagem) {
+      throw new NotFoundException('Personagem não encontrado.');
+    }
+
+    if (personagem.usuario_id !== usuarioId) {
+      throw new ForbiddenException('Só o dono pode alterar este personagem.');
+    }
+
+    const nome = atualizacao.nome.trim();
+
+    if (!nome) {
+      throw new BadRequestException('Nome inválido.');
+    }
+
+    try {
+      return await this.repository.atualizarNome(id, usuarioId, nome);
+    } catch (erro) {
+      if (erro instanceof Prisma.PrismaClientKnownRequestError) {
+        if (erro.code === 'P2002') {
+          throw new ConflictException('Nome de personagem já cadastrado.');
+        }
+
+        if (erro.code === 'P2025') {
+          throw new NotFoundException('Personagem não encontrado.');
+        }
+      }
+
+      throw erro;
+    }
   }
 
   async remove(id: number): Promise<void> {

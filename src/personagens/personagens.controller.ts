@@ -79,8 +79,22 @@ export class PersonagensController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePersonagenDto: UpdatePersonagenDto) {
-    return this.personagensService.update(+id, updatePersonagenDto);
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Altera o nome do próprio personagem' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiOkResponse({ type: PersonagemRespostaDto })
+  @ApiBadRequestResponse({ description: 'ID ou nome inválido.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Só o dono pode alterar este personagem.' })
+  @ApiNotFoundResponse({ description: 'Personagem não encontrado.' })
+  @ApiConflictResponse({ description: 'Nome de personagem já cadastrado.' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() atualizacao: UpdatePersonagenDto,
+    @Req() requisicao: Request & { usuarioId: number },
+  ): Promise<PersonagemRespostaDto> {
+    return this.personagensService.update(id, atualizacao, requisicao.usuarioId);
   }
 
   @Delete(':id')

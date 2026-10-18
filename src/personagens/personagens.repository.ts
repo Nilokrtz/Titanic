@@ -122,4 +122,11 @@ export class PersonagensRepository {
   async excluir(id: number) {
     return this.prisma.personagens.deleteMany({ where: { id } });
   }
+
+  async atualizarNome(id: number, usuarioId: number, nome: string) {
+    return this.prisma.personagens.update({
+      where: { id, usuario_id: usuarioId },
+      data: { nome },
+    });
+  }
 }
