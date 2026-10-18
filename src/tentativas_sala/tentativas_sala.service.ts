@@ -36,4 +36,24 @@ export class TentativasSalaService {
     }
     return tentativa;
   }
+
+  async update(id: number, updateDto: CreateTentativasSalaDto) {
+    await this.findById(id);
+
+    if (updateDto.personagem_id !== undefined && updateDto.personagem_id !== null) {
+      const personagem = await this.repository.buscarPersonagemPorId(updateDto.personagem_id);
+      if (!personagem) {
+        throw new NotFoundException('Personagem informado não foi encontrado.');
+      }
+    }
+
+    if (updateDto.sala_id !== undefined && updateDto.sala_id !== null) {
+      const sala = await this.repository.buscarSalaPorId(updateDto.sala_id);
+      if (!sala) {
+        throw new NotFoundException('Sala de desafio informada não foi encontrada.');
+      }
+    }
+
+    return this.repository.atualizar(id, updateDto);
+  }
 }

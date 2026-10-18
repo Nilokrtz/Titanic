@@ -80,4 +80,16 @@ export class TentativasSalaRepository {
       include: { personagens: true, salas_desafio: true, quiz_questoes: true },
     });
   }
+
+  async atualizar(id: number, data: CreateTentativasSalaDto) {
+    return this.prisma.tentativas_sala.update({
+      where: { id },
+      data,
+      include: {
+        personagens: true,
+        salas_desafio: true,
+        quiz_questoes: true,
+      },
+    });
+  }
 }

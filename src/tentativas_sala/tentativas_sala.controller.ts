@@ -1,5 +1,5 @@
-import { Controller, Post, Body, UseGuards, Get, Query, ParseIntPipe, Param } from '@nestjs/common';
-import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiNotFoundResponse,ApiOkResponse,ApiOperation,ApiParam,ApiTags,ApiUnauthorizedResponse} from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards, Get,Patch, Query, ParseIntPipe, Param } from '@nestjs/common';
+import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiNotFoundResponse,ApiOkResponse,ApiOperation,ApiParam,ApiTags,ApiUnauthorizedResponse,ApiForbiddenResponse} from '@nestjs/swagger';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { TentativasSalaService } from './tentativas_sala.service.js';
 import { CreateTentativasSalaDto } from './dto/create-tentativas_sala.dto.js';
@@ -48,5 +48,20 @@ export class TentativasSalaController {
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.tentativasSalaService.findById(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Atualiza dados/status de uma tentativa' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID da tentativa' })
+  @ApiOkResponse({ description: 'Tentativa atualizada com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos.' })
+  @ApiNotFoundResponse({ description: 'Tentativa, Personagem ou Sala não encontrada.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: CreateTentativasSalaDto) {
+    return this.tentativasSalaService.update(id, updateDto);
   }
 }
