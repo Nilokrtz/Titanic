@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { EspecializacoesRepository } from './especializacoes.repository.js';
 import { CreateEspecializacoeDto } from './dto/create-especializacoes.dto.js';
 import { UpdateEspecializacoeDto } from './dto/update-especializacoes.dto.js';
+import { FindEspecializacoesQueryDto } from './dto/find-especializacoes-query.dto.js';
 
 @Injectable()
 export class EspecializacoesService {
@@ -15,8 +16,20 @@ export class EspecializacoesService {
     return this.repository.criar(dados);
   }
 
-  findAll() {
-    return `This action returns all especializacoes`;
+  async findAll(query: FindEspecializacoesQueryDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    const{dados, total} = await this.repository.listarComPaginacao(query);
+    const totalPaginas = Math.ceil(total / limit);
+
+    return{
+      dados,
+      total,
+      page,
+      totalPaginas,
+      limit,
+    };
   }
 
   findOne(id: number) {

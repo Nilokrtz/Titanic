@@ -28,8 +28,13 @@ export class EspecializacoesController {
   }
 
   @Get()
-  findAll() {
-    return this.especializacoesService.findAll();
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Listar todas as especializações com paginação e filtros' })
+  @ApiOkResponse({ description: 'Lista de especializações retornada com sucesso.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  findAll(@Query() query: FindEspecializacoesQueryDto) {
+    return this.especializacoesService.findAll(query);
   }
 
   @Get(':id')
