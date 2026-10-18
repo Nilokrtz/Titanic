@@ -79,4 +79,15 @@ export class PerfisController {
   ): Promise<PerfilRespostaDto> {
     return this.perfisService.update(id, atualizacao);
   }
+
+  @Get(':id/permissoes')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Lista as permissões associadas a um perfil' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID do perfil', example: 1 })
+  @ApiOkResponse({ description: 'Permissões do perfil retornadas com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Perfil não encontrado.' })
+  listarPermissoesDoPerfil(@Param('id', ParseIntPipe) id: number) {
+    return this.perfisService.listarPermissoes(id);
+  }
 }

@@ -4,9 +4,10 @@ import { PrismaModule } from '../prisma/prisma.module.js';
 import { PerfisService } from './perfis.service.js';
 import { PerfisController } from './perfis.controller.js';
 import { PerfisRepository } from './perfis.repository.js';
+import { PermissoesModule } from '../permissoes/permissoes.module.js';
 
 @Module({
-  imports: [AuthModule, PrismaModule],
+  imports: [AuthModule, PrismaModule, PermissoesModule],
   controllers: [PerfisController],
   providers: [PerfisService, PerfisRepository],
 })

@@ -53,4 +53,20 @@ export class PerfisRepository {
       select: { id: true, nome: true, descricao: true },
     });
   }
+
+  async listarPermissoesDoPerfil(perfilId: number) {
+    return this.prisma.perfis.findUnique({
+      where: { id: perfilId },
+      select: {
+        id: true,
+        nome: true,
+        perfis_permissoes: {
+          select: {
+            permissoes: true, 
+          },
+        },
+      },
+    });
+  }
+  
 }
