@@ -73,30 +73,46 @@ export class InventarioItensService {
         id,
         personagem_id: personagemId,
       },
+      include: { itens: true },
     });
 
-    if (!registro) {
+    if (!registro || !registro.itens) {
       throw new NotFoundException(
         'Item não encontrado no inventário deste personagem.',
       );
     }
 
-    if ((registro.quantidade ?? 1) > 1) {
-      const atualizado = await this.prisma.inventario_itens.update({
+    const valorReembolso = Math.floor(registro.itens.preco_moedas * 0.9);
+
+    return this.prisma.$transaction(async (tx) => {
+      const personagemAtualizado = await tx.personagens.update({
+        where: { id: personagemId },
+        data: {
+          moedas: { increment: valorReembolso },
+        },
+      });
+
+      if ((registro.quantidade ?? 1) > 1) {
+        const atualizado = await tx.inventario_itens.update({
+          where: { id: registro.id },
+          data: { quantidade: (registro.quantidade ?? 1) - 1 },
+        });
+
+        return {
+          mensagem: 'Uma unidade do item foi vendida com 10% de taxa.',
+          moedas_atuais: personagemAtualizado.moedas,
+          inventario: atualizado,
+        };
+      }
+
+      await tx.inventario_itens.delete({
         where: { id: registro.id },
-        data: { quantidade: (registro.quantidade ?? 1) - 1 },
       });
 
       return {
-        mensagem: 'Uma unidade do item foi descartada da mochila.',
-        inventario: atualizado,
+        mensagem: 'Item vendido completamente da mochila com 10% de taxa.',
+        moedas_atuais: personagemAtualizado.moedas,
       };
-    }
-
-    await this.prisma.inventario_itens.delete({
-      where: { id: registro.id },
     });
-
-    return { mensagem: 'Item descartado completamente da mochila.' };
   }
 }

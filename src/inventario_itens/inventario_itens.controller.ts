@@ -1,22 +1,9 @@
-import {
-  Controller,
-  Get,
-  ParseIntPipe,
-  Param,
-  Delete,
-  Query,
-  UseGuards,
-  ValidationPipe,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-  ApiUnauthorizedResponse,
-} from '@nestjs/swagger';
+import { Controller, Get, ParseIntPipe, 
+       Param, Delete, Query, UseGuards,
+      } from '@nestjs/common';
+import { ApiBearerAuth, ApiNotFoundResponse, ApiOkResponse,
+       ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse,
+       } from '@nestjs/swagger';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { FindInventarioQueryDto } from './dto/find-inventario-query.dto.js';
 import { InventarioItensService } from './inventario_itens.service.js';
@@ -35,14 +22,7 @@ export class InventarioItensController {
   @ApiParam({ name: 'personagemId', type: Number })
   listarMochila(
     @Param('personagemId', ParseIntPipe) personagemId: number,
-    @Query(
-      new ValidationPipe({
-        transform: true,
-        whitelist: true,
-        forbidNonWhitelisted: true,
-      }),
-    )
-    filtros: FindInventarioQueryDto,
+    @Query() filtros: FindInventarioQueryDto,
   ) {
     return this.inventarioItensService.listarMochila(personagemId, filtros);
   }
