@@ -43,6 +43,6 @@ import { SenhasService } from './senhas.service.js';
     AutenticacaoGuard,
     RolesGuard,
   ],
-  exports: [AutenticacaoGuard, RolesGuard, SenhasService, JwtModule],
+  exports: [AutenticacaoGuard, RolesGuard, SenhasService, JwtModule, AuthRepository],
 })
 export class AuthModule {}

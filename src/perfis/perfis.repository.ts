@@ -68,5 +68,14 @@ export class PerfisRepository {
       },
     });
   }
+
+  async adicionarPermissao(perfilId: number, permissaoId: number) {
+  return this.prisma.perfis_permissoes.create({
+    data: {
+      perfil_id: perfilId,       
+      permissao_id: permissaoId, 
+    },
+  });
+}
   
 }

@@ -7,10 +7,12 @@ import {
   ParseIntPipe,
   Query,
   UseGuards,
+  Post,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -28,6 +30,7 @@ import { ListarPerfisDto } from './dto/listar-perfis.dto.js';
 import { ListarPerfisRespostaDto } from './dto/listar-perfis-resposta.dto.js';
 import { PerfilRespostaDto } from './dto/perfil-resposta.dto.js';
 import { UpdatePerfiDto } from './dto/update-perfi.dto.js';
+import { AdicionarPermissaoPerfilDto } from './dto/adicionar-permissao-perfil.dto.js';
 
 @ApiTags('Perfis')
 @Controller('perfis')
@@ -90,4 +93,21 @@ export class PerfisController {
   listarPermissoesDoPerfil(@Param('id', ParseIntPipe) id: number) {
     return this.perfisService.listarPermissoes(id);
   }
+
+  @Post(':id/permissoes')
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Adiciona uma permissão a um perfil' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID do perfil', example: 1 })
+  @ApiCreatedResponse({ description: 'Permissão adicionada ao perfil com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Perfil ou permissão não encontrados.' })
+  adicionarPermissao(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AdicionarPermissaoPerfilDto,
+  ) {
+    return this.perfisService.adicionarPermissao(id, dto);
+  }
+  
+  
 }

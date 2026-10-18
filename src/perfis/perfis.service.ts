@@ -52,4 +52,18 @@ export class PerfisService {
 
     return { dados: permissoes };
   }
+
+  async adicionarPermissao(id: number, dto: AdicionarPermissaoPerfilDto) {
+    const perfil = await this.repository.buscarPorId(id);
+    if (!perfil) {
+      throw new NotFoundException(`Perfil com ID ${id} não encontrado.`);
+    }
+
+    const permissao = await this.permissoesRepository.buscarPorId(dto.permissaoId);
+    if (!permissao) {
+      throw new NotFoundException(`Permissão com ID ${dto.permissaoId} não encontrada.`);
+    }
+
+    return this.repository.adicionarPermissao(id, dto.permissaoId);
+  }
 }
