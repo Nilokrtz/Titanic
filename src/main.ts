@@ -39,7 +39,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: ['amqp://localhost:5672'],
-      queue: 'tentativas_gameplay_queue',
+      queue: 'send_email_eventos_queue',
       queueOptions: {
         durable: true,
       },

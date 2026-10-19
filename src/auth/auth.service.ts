@@ -19,6 +19,7 @@ import { MeRespostaDto } from './dto/me-resposta.dto.js';
 import { RefreshDto } from './dto/refresh.dto.js';
 import { SenhasService } from './senhas.service.js';
 import { EmailService } from './email.service.js';
+import { EventosProducerService } from '../eventos/eventos_producer.service.js';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +30,7 @@ export class AuthService {
     private readonly senhasService: SenhasService,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly eventosProducer: EventosProducerService
   ) {}
 
   async registrar(registro: RegistrarDto): Promise<RegistrarRespostaDto> {
@@ -47,6 +49,12 @@ export class AuthService {
         hashSenha,
         perfilAluno.id,
       );
+
+      await this.eventosProducer.publicarUsuarioRegistado({
+        usuarioId: usuario.id,
+        email: usuario.email,
+        criadoEm: new Date(),
+      });
 
       try {
         await this.emailService.enviarBoasVindas(usuario.email);

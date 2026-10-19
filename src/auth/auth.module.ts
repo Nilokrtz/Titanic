@@ -9,6 +9,7 @@ import { AutenticacaoGuard } from './guards/autenticacao.guard.js';
 import { RolesGuard } from './guards/roles.guard.js';
 import { SenhasService } from './senhas.service.js';
 import { EmailService } from './email.service.js';
+import { EventosProducerService } from '../eventos/eventos_producer.service.js';
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { EmailService } from './email.service.js';
     EmailService,
     AutenticacaoGuard,
     RolesGuard,
+    EventosProducerService
   ],
-  exports: [AutenticacaoGuard, RolesGuard, SenhasService, JwtModule, AuthRepository],
+  exports: [AutenticacaoGuard, RolesGuard, SenhasService, JwtModule, AuthRepository, EmailService],
 })
 export class AuthModule {}
