@@ -6,7 +6,7 @@ services:
     container_name: rpg_rabbitmq
     ports:
       - '5672:5672'   
-      - '15672:15672' 
+      - '15672:15672'
   postgres:
     image: postgres:17
     environment:
@@ -34,7 +34,7 @@ services:
   api:
     build: .
     ports:
-      - "3000:3000"
+      - "${API_PORT:-3000}:3000"
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-root}@postgres:5432/rpg_academico
       JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no .env}
@@ -47,6 +47,26 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: rpg_prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: rpg_grafana
+    ports:
+      - '3001:3000'
+    volumes:
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+      - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/api.yml:ro
+      - ./grafana/dashboards:/etc/grafana/dashboards:ro
+    restart: always
 
 volumes:
   postgres_data:
