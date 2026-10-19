@@ -13,7 +13,7 @@ import { AuthModule } from '../auth/auth.module.js';
         name: 'RABBITMQ_SERVICE',
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://guest:guest@localhost:5672'],
+          urls: [process.env.RABBITMQ_URL ?? 'amqp://guest:guest@localhost:5672'],
           queue: 'send_email_eventos_queue',
           queueOptions: {
             durable: true,

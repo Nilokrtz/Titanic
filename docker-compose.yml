@@ -4,9 +4,17 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rpg_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: httpquest
+      RABBITMQ_DEFAULT_PASS: httpquest
     ports:
-      - '5672:5672'   
-      - '15672:15672'
+      - '127.0.0.1:5672:5672'
+      - '127.0.0.1:15672:15672'
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   postgres:
     image: postgres:17
     environment:
@@ -42,10 +50,13 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD:-}
       REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://httpquest:httpquest@rabbitmq:5672
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   prometheus:
