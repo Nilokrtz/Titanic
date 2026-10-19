@@ -99,7 +99,7 @@ findMe(
   })
   @ApiOkResponse({
     type: RankingXpRespostaDto,
-    description: 'Ranking de personagens por XP retornado com sucesso.',
+    description: 'Ranking por XP. Com Redis, o resultado pode ficar em cache por até 30 segundos.',
   })
   @ApiBadRequestResponse({ description: 'Filtros ou paginação inválidos.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente, inválido ou expirado.' })
