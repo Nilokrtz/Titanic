@@ -20,16 +20,7 @@ export class TentativasSalaController {
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Registra/inicia uma nova tentativa em uma sala' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['sala_id', 'personagem_id'],
-      properties: {
-        sala_id: { type: 'integer', minimum: 1, example: 1 },
-        personagem_id: { type: 'integer', minimum: 1, example: 1 },
-      },
-    },
-  })
+  @ApiBody({ type: CreateTentativasSalaDto })
   @ApiCreatedResponse({ description: 'Tentativa registrada com sucesso.' })
   @ApiBadRequestResponse({ description: 'Dados inválidos, ranking insuficiente ou sala já concluída.' })
   @ApiNotFoundResponse({ description: 'Personagem ou Sala de desafio não encontrada.' })
