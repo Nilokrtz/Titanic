@@ -23,7 +23,8 @@ Se o envio falhar, o cadastro continua salvo. Veja o erro no log da API para cor
 1. Instale o Node.js e o PostgreSQL. Crie no PostgreSQL um banco vazio chamado `rpg_academico`.
 2. Na pasta do projeto, rode `npm install`.
 3. Copie `.env.example` para `.env`. No `.env`, coloque a conexão do seu PostgreSQL em `DATABASE_URL` e escolha valores diferentes para `JWT_SECRET` e `JWT_REFRESH_SECRET`. Um exemplo de conexão local é `postgresql://postgres:SUA_SENHA@localhost:5432/rpg_academico`.
-4. Rode os comandos abaixo, nessa ordem:
+4. Para usar o cache do ranking, inicie um Redis na porta 6379. Se tiver Docker, pode rodar `docker compose up -d redis`. Sem Redis, o ranking continua consultando o banco normalmente.
+5. Rode os comandos abaixo, nessa ordem:
 
 ```bash
 npx prisma migrate deploy
@@ -46,4 +47,7 @@ docker compose up --build -d
 docker compose exec api npm run db:seed
 ```
 
-O primeiro comando sobe a API e o PostgreSQL e aplica as migrations. o segundo popula um banco novo com os dados iniciais. Depois, abra o Swagger em http://localhost:3000/api.
+O primeiro comando sobe a API, o PostgreSQL e o Redis e aplica as migrations, depois ele popula um banco novo com os dados iniciais. Depois, abra o Swagger em http://localhost:3000/api.
+
+O Redis guarda por 30 segundos os resultados de `GET /personagens/ranking/xp`, `GET /salas`, `GET /salas/:id`, `GET /itens`, `GET /ranks` e `GET /questoes`. 
+Quando um professor chama algum endpoint, o cache correspondente é limpo. Se o Redis estiver fora do ar as consultas continuam pelo PostgreSQL.

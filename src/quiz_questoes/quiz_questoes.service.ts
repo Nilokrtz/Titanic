@@ -3,12 +3,16 @@ import { QuizQuestoesRepository } from './quiz_questoes.repository.js';
 import { CreateQuizQuestoesDto } from './dto/create-quiz_questoes.dto.js';
 import { FindQuizQuestoesQueryDto } from './dto/find-quiz-questoes-query.dto.js';
 import { UpdateQuizQuestoesDto } from './dto/update-quiz_questoes.dto.js';
+import { RedisCacheService } from '../common/redis-cache.service.js';
 
 type Alternativa = { chave: string; texto: string };
 
 @Injectable()
 export class QuizQuestoesService {
-  constructor(private readonly repository: QuizQuestoesRepository) {}
+  constructor(
+    private readonly repository: QuizQuestoesRepository,
+    private readonly cache: RedisCacheService,
+  ) {}
 
   async create(createDto: CreateQuizQuestoesDto) {
     const sala = await this.repository.buscarSalaPorId(createDto.sala_id);
@@ -17,11 +21,14 @@ export class QuizQuestoesService {
       throw new NotFoundException('A sala de desafio informada não foi encontrada.');
     }
 
-    return this.repository.criar(createDto);
+    const questao = await this.repository.criar(createDto);
+    await this.cache.limpar('questoes:lista:');
+    return questao;
   }
 
   async findAll(filtros: FindQuizQuestoesQueryDto) {
-    return this.repository.listarComFiltrosEPaginacao(filtros);
+    const chave = `questoes:lista:${JSON.stringify(filtros)}`;
+    return this.cache.consultar(chave, () => this.repository.listarComFiltrosEPaginacao(filtros));
   }
 
   async findById(id: number) {
@@ -42,12 +49,15 @@ export class QuizQuestoesService {
       }
     }
 
-    return this.repository.atualizar(id, updateDto);
+    const questao = await this.repository.atualizar(id, updateDto);
+    await this.cache.limpar('questoes:lista:');
+    return questao;
   }
 
   async remove(id: number) {
     await this.findById(id);
     await this.repository.remover(id);
+    await this.cache.limpar('questoes:lista:');
     return { mensagem: 'Questão removida com sucesso.' };
   }
 

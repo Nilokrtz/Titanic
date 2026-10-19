@@ -35,7 +35,7 @@ export class ItensController {
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Lista itens da loja com paginacao e filtros' })
-  @ApiOkResponse({ type: ListarItensRespostaDto }) 
+  @ApiOkResponse({ type: ListarItensRespostaDto, description: 'Lista de itens. Com Redis, pode ficar em cache por até 30 segundos.' })
   @ApiBadRequestResponse({ description: 'Filtros invalidos.' }) 
   findAll(@Query() filtros: FindItensQueryDto) {
     return this.itensService.findAll(filtros);

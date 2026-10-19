@@ -3,10 +3,14 @@ import { SalasDesafioRepository } from './salas_desafio.repository.js';
 import { CreateSalasDesafioDto } from './dto/create-salas_desafio.dto.js';
 import { UpdateSalasDesafioDto } from './dto/update-salas_desafio.dto.js';
 import { FindSalasQueryDto } from './dto/find-salas-query.dto.js';
+import { RedisCacheService } from '../common/redis-cache.service.js';
 
 @Injectable()
 export class SalasDesafioService {
-  constructor(private readonly repository: SalasDesafioRepository) {}
+  constructor(
+    private readonly repository: SalasDesafioRepository,
+    private readonly cache: RedisCacheService,
+  ) {}
 
   async create(createDto: CreateSalasDesafioDto) {
     const salaExistente = await this.repository.buscarPorNumeroSala(createDto.numero_sala);
@@ -21,15 +25,19 @@ export class SalasDesafioService {
       }
     }
 
-    return this.repository.criar(createDto);
+    const sala = await this.repository.criar(createDto);
+    await this.cache.limpar('salas:');
+    return sala;
   }
 
   async findAll(filtros: FindSalasQueryDto) {
-    return this.repository.listarComFiltrosEPaginacao(filtros);
+    const chave = `salas:lista:${JSON.stringify(filtros)}`;
+    return this.cache.consultar(chave, () => this.repository.listarComFiltrosEPaginacao(filtros));
   }
 
   async findById(id: number){
-    const sala = await this.repository.buscarSalaPorId(id);
+    const chave = `salas:id:${id}`;
+    const sala = await this.cache.consultar(chave, () => this.repository.buscarSalaPorId(id));
     if(!sala){
       throw new NotFoundException('Sala de desafio não encontrada')
     }
@@ -54,7 +62,10 @@ export class SalasDesafioService {
       }
     }
 
-    return this.repository.atualizarSala(id, updateDto);
+    const sala = await this.repository.atualizarSala(id, updateDto);
+    await this.cache.limpar('salas:');
+    await this.cache.limpar('questoes:lista:');
+    return sala;
   }
 
   async remove(id: number) {
@@ -65,6 +76,8 @@ export class SalasDesafioService {
     }
 
     await this.repository.remover(id);
+    await this.cache.limpar('salas:');
+    await this.cache.limpar('questoes:lista:');
     return { mensagem: 'Sala de desafio removida com sucesso.' };
   }
 }

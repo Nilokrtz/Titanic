@@ -7,3 +7,46 @@ services:
     ports:
       - '5672:5672'   
       - '15672:15672' 
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
+      POSTGRES_DB: rpg_academico
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rpg_academico"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-root}@postgres:5432/rpg_academico
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Defina JWT_REFRESH_SECRET no .env}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_APP_PASSWORD: ${SMTP_APP_PASSWORD:-}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

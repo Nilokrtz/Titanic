@@ -3,11 +3,15 @@ import { RanksRepository } from './ranks.repository.js';
 import { CreateRankDto } from './dto/create-rank.dto.js';
 import { UpdateRankDto } from './dto/update-rank.dto.js';
 import { FindRanksQueryDto } from './dto/find-ranks-query.dto.js';
+import { RedisCacheService } from '../common/redis-cache.service.js';
 
 
 @Injectable()
 export class RanksService {
-  constructor(private readonly repository: RanksRepository) {}
+  constructor(
+    private readonly repository: RanksRepository,
+    private readonly cache: RedisCacheService,
+  ) {}
 
   async create(createRankDto: CreateRankDto) {
     const nomeExiste = await this.repository.buscarPorNome(createRankDto.nome);
@@ -25,23 +29,26 @@ export class RanksService {
       throw new BadRequestException(`Já existe um rank cadastrado para o valor de "${createRankDto.xp_minimo}" XP.`);
     }
 
-    return this.repository.criar(createRankDto);
+    const rank = await this.repository.criar(createRankDto);
+    await this.cache.limpar('ranks:lista:');
+    return rank;
   }
 
   async findAll(query: FindRanksQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10; 
+    const chave = `ranks:lista:${JSON.stringify(query)}`;
+    return this.cache.consultar(chave, async () => {
+      const page = query.page ?? 1;
+      const limit = query.limit ?? 10;
+      const {data, total} = await this.repository.listarComPaginacao(query);
 
-    const {data, total} = await this.repository.listarComPaginacao(query);
-    const totalPaginas = Math.ceil(total / limit);
-
-    return {
+      return {
         data,
         total,
         page,
-        totalPaginas,
+        totalPaginas: Math.ceil(total / limit),
         limit,
-    };
+      };
+    });
   }
 
   async findOne(id: number) {
@@ -78,12 +85,17 @@ export class RanksService {
       }
     }
 
-    return this.repository.atualizar(id, updateRankDto);
+    const rank = await this.repository.atualizar(id, updateRankDto);
+    await this.cache.limpar('ranks:lista:');
+    await this.cache.limpar('salas:');
+    return rank;
   }
 
   async remove(id: number) {
     await this.findOne(id);
     await this.repository.remover(id);
+    await this.cache.limpar('ranks:lista:');
+    await this.cache.limpar('salas:');
     return { message: `Rank foi removido com sucesso.` };
   }
 }

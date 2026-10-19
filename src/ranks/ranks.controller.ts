@@ -32,7 +32,7 @@ export class RanksController {
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar todos os ranks com paginação e filtros' })
-  @ApiOkResponse({ description: 'Lista de ranks retornada com sucesso.' })
+  @ApiOkResponse({ description: 'Lista de ranks. Com Redis, pode ficar em cache por até 30 segundos.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })  
   findAll(@Query() query: FindRanksQueryDto) {
     return this.ranksService.findAll(query);

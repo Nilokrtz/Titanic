@@ -10,10 +10,14 @@ import { ListarPersonagensMeDto } from './dto/listar-personagens-me.dto.js';
 import { RankingXpQueryDto } from './dto/ranking-xp-query.dto.js';
 import { RankingXpRespostaDto } from './dto/ranking-xp-resposta.dto.js';
 import { ListarTentativasPersonagemDto } from './dto/listar-tentativas-personagem.dto.js';
+import { RedisCacheService } from '../common/redis-cache.service.js';
 
 @Injectable()
 export class PersonagensService {
-  constructor(private readonly repository: PersonagensRepository) {}
+  constructor(
+    private readonly repository: PersonagensRepository,
+    private readonly rankingCache: RedisCacheService,
+  ) {}
 
   async create(createPersonagenDto: CreatePersonagenDto, usuarioId: number) {
     const usuario = await this.repository.buscarUsuarioPorId(usuarioId);
@@ -77,8 +81,9 @@ export class PersonagensService {
     return this.repository.listar(filtros);
   }
 
-  rankingXp(filtros: RankingXpQueryDto): Promise<RankingXpRespostaDto> {
-    return this.repository.listarRankingXp(filtros);
+  async rankingXp(filtros: RankingXpQueryDto): Promise<RankingXpRespostaDto> {
+    const chave = `ranking:xp:${filtros.page ?? 1}:${filtros.limit ?? 10}:${filtros.especializacao_id ?? 'todos'}:${filtros.rank_id ?? 'todos'}`;
+    return this.rankingCache.consultar(chave, () => this.repository.listarRankingXp(filtros));
   }
 
   async findOne(id: number, usuarioId: number): Promise<PersonagemRespostaDto> {
