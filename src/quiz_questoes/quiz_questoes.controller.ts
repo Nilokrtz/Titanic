@@ -33,7 +33,7 @@ export class QuizQuestoesController {
   @Roles(tipo_perfil.ADMIN_PROFESSOR, tipo_perfil.MONITOR)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Lista questões com paginação e filtros' })
-  @ApiOkResponse({ description: 'Lista paginada de questões retornada com sucesso.' })
+  @ApiOkResponse({ description: 'Lista de questões. Com Redis, pode ficar em cache por até 30 segundos.' })
   @ApiBadRequestResponse({ description: 'Parâmetros de filtro ou paginação inválidos.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findAll(@Query() filtros: FindQuizQuestoesQueryDto) {

@@ -32,7 +32,7 @@ export class SalasDesafioController {
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Lista todas as salas de desafio disponíveis' })
-  @ApiOkResponse({ description: 'Lista de salas retornadas com sucesso' })
+  @ApiOkResponse({ description: 'Lista de salas. Com Redis, pode ficar em cache por até 30 segundos.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findAll(@Query() filtros: FindSalasQueryDto) {
     return this.salasDesafioService.findAll(filtros);
@@ -43,7 +43,7 @@ export class SalasDesafioController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Consulta as informações de uma sala pelo ID da mesma' })
   @ApiParam({name: 'id', type: Number, description: 'ID da sala de desafio'})
-  @ApiOkResponse({ description: 'Sala de desafio encontrada' })
+  @ApiOkResponse({ description: 'Sala de desafio encontrada. Com Redis, pode ficar em cache por até 30 segundos.' })
   @ApiNotFoundResponse({ description: 'Sala de desafio não encontrada' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findById(@Param('id', ParseIntPipe) id: number){

@@ -47,6 +47,7 @@ docker compose up --build -d
 docker compose exec api npm run db:seed
 ```
 
-O primeiro comando sobe a API, o PostgreSQL e o Redis e aplica as migrations. O segundo popula um banco novo com os dados iniciais. Depois, abra o Swagger em http://localhost:3000/api.
+O primeiro comando sobe a API, o PostgreSQL e o Redis e aplica as migrations, depois ele popula um banco novo com os dados iniciais. Depois, abra o Swagger em http://localhost:3000/api.
 
-O Redis guarda o resultado de `GET /personagens/ranking/xp` por 30 segundos. Nesse intervalo, os dados do ranking podem ficar desatualizados até o cache vencer.
+O Redis guarda por 30 segundos os resultados de `GET /personagens/ranking/xp`, `GET /salas`, `GET /salas/:id`, `GET /itens`, `GET /ranks` e `GET /questoes`. 
+Quando um professor chama algum endpoint, o cache correspondente é limpo. Se o Redis estiver fora do ar as consultas continuam pelo PostgreSQL.
