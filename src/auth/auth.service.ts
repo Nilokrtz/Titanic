@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -17,13 +18,17 @@ import { LoginRespostaDto } from './dto/login-resposta.dto.js';
 import { MeRespostaDto } from './dto/me-resposta.dto.js';
 import { RefreshDto } from './dto/refresh.dto.js';
 import { SenhasService } from './senhas.service.js';
+import { EmailService } from './email.service.js';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly repository: AuthRepository,
     private readonly senhasService: SenhasService,
     private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async registrar(registro: RegistrarDto): Promise<RegistrarRespostaDto> {
@@ -42,6 +47,15 @@ export class AuthService {
         hashSenha,
         perfilAluno.id,
       );
+
+      try {
+        await this.emailService.enviarBoasVindas(usuario.email);
+      } catch (erro) {
+        this.logger.error(
+          `Email de boas-vindas não enviado para o usuário ${usuario.id}.`,
+          erro instanceof Error ? erro.stack : undefined,
+        );
+      }
 
       return { id: usuario.id, email: usuario.email, perfil: 'ALUNO' };
     } catch (erro) {

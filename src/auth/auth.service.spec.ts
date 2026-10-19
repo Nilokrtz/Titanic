@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthRepository } from './auth.repository.js';
 import { AuthService } from './auth.service.js';
 import { SenhasService } from './senhas.service.js';
+import { EmailService } from './email.service.js';
 
 describe('AuthService', () => {
   const buscarPerfilAluno = vi.fn();
@@ -14,6 +15,7 @@ describe('AuthService', () => {
   const gerarHash = vi.fn();
   const verificarToken = vi.fn();
   const assinarToken = vi.fn();
+  const enviarBoasVindas = vi.fn();
   const repository = {
     buscarPerfilAluno,
     criarAluno,
@@ -32,7 +34,8 @@ describe('AuthService', () => {
     verifyAsync: verificarToken,
     signAsync: assinarToken,
   } as unknown as JwtService;
-  const service = new AuthService(repository, senhasService, jwtService);
+  const emailService = { enviarBoasVindas } as unknown as EmailService;
+  const service = new AuthService(repository, senhasService, jwtService, emailService);
 
   beforeEach(() => {
     buscarPerfilAluno.mockReset();
@@ -44,6 +47,7 @@ describe('AuthService', () => {
     gerarHash.mockReset();
     verificarToken.mockReset();
     assinarToken.mockReset();
+    enviarBoasVindas.mockReset();
   });
 
   it('registra aluno com senha em hash e sem devolvê-la', async () => {
@@ -59,6 +63,7 @@ describe('AuthService', () => {
       'hash-da-senha',
       3,
     );
+    expect(enviarBoasVindas).toHaveBeenCalledWith('aluno@exemplo.com');
   });
 
   it('faz login e guarda o hash do refresh token', async () => {
