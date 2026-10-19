@@ -12,6 +12,12 @@ O seed cria estas contas para testar os três perfis:
 | Monitor | `monitor@cefet.br` | `senhamonitor` |
 | Aluno | `nilo@cefet.br` | `senhanilo` |
 
+## Email de boas-vindas
+
+O cadastro envia um email de boas-vindas pelo Gmail. Para isso, ative a verificação em duas etapas na conta que vai enviar as mensagens e crie uma senha de app. No `.env`, coloque o endereço dessa conta em `SMTP_USER` e a senha de app em `SMTP_APP_PASSWORD`. Não use a senha normal do Gmail. Essas duas variáveis também são usadas quando a API roda no Docker.
+
+Se o envio falhar, o cadastro continua salvo. Veja o erro no log da API para corrigir a configuração antes do próximo teste.
+
 ##  instalação usando um PostgreSQL instalado na máquina
 
 1. Instale o Node.js e o PostgreSQL. Crie no PostgreSQL um banco vazio chamado `rpg_academico`.

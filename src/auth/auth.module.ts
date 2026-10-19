@@ -8,6 +8,7 @@ import { AuthRepository } from './auth.repository.js';
 import { AutenticacaoGuard } from './guards/autenticacao.guard.js';
 import { RolesGuard } from './guards/roles.guard.js';
 import { SenhasService } from './senhas.service.js';
+import { EmailService } from './email.service.js';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SenhasService } from './senhas.service.js';
     AuthService,
     AuthRepository,
     SenhasService,
+    EmailService,
     AutenticacaoGuard,
     RolesGuard,
   ],
