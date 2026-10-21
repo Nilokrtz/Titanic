@@ -10,27 +10,28 @@ export class QuizQuestoesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async buscarSalaPorId(salaId: number) {
-    return this.prisma.salas_desafio.findUnique({
-      where: { id: salaId },
-    });
+    return this.prisma.salas_desafio.findUnique({where: { id: salaId }});
   }
 
   async criar(data: CreateQuizQuestoesDto) {
     return this.prisma.quiz_questoes.create({
-      data,
+      data: { ...data, topico_atributo: data.topico_questao },
       include: { salas_desafio: true }
     });
   }
 
   async listarComFiltrosEPaginacao(filtros: FindQuizQuestoesQueryDto) {
-    const where: Prisma.quiz_questoesWhereInput = {};
+    const where: Prisma.quiz_questoesWhereInput = {
+      topico_atributo: ''
+    };
 
+    
     if (filtros.sala_id !== undefined) {
       where.sala_id = filtros.sala_id;
     }
-
-    if (filtros.topico_atributo) {
-      where.topico_atributo = filtros.topico_atributo;
+    
+    if (filtros.topico_questao !== undefined) {
+      where.topico_atributo = filtros.topico_questao;
     }
 
     if (filtros.enunciado) {
