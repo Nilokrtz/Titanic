@@ -5,7 +5,8 @@ import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { tipo_perfil } from '../generated/prisma/enums.js';
-import { CreateTentativasSalaDto } from './dto/create-tentativas_sala.dto.js';
+import { CreateTentativasDto } from './dto/create-tentativas_sala.dto.js';
+import { UpdateTentativasDto } from './dto/update-tentativas_sala.dto.js';
 import { DesistirTentativaDto } from './dto/desistir-tentativas.dto.js';
 import { FindTentativasQueryDto } from './dto/find-tentativas-query.dto.js';
 import { ResponderTentativaDto } from './dto/responder-tentativa.dto.js';
@@ -20,50 +21,14 @@ export class TentativasSalaController {
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Registra/inicia uma nova tentativa em uma sala' })
-  @ApiBody({ type: CreateTentativasSalaDto })
+  @ApiBody({ type: CreateTentativasDto })
   @ApiCreatedResponse({ description: 'Tentativa registrada com sucesso.' })
   @ApiBadRequestResponse({ description: 'Dados inválidos, ranking insuficiente ou sala já concluída.' })
   @ApiNotFoundResponse({ description: 'Personagem ou Sala de desafio não encontrada.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'O personagem não pertence ao usuário autenticado.' })
-  create(@Body('sala_id', ParseIntPipe) salaId: number,@Body('personagem_id', ParseIntPipe) personagemId: number,@Req() requisicao: Request & { usuarioId: number },
-  ) {
-    return this.tentativasSalaService.create(salaId, personagemId, requisicao.usuarioId);
-  }
-
-  @Post(':id/responder')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(AutenticacaoGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Envia a resposta de uma questão e processa acerto/dano/morte' })
-  @ApiParam({ name: 'id', type: Number, description: 'ID da tentativa em andamento' })
-  @ApiOkResponse({ description: 'Resposta processada com sucesso.' })
-  @ApiBadRequestResponse({ description: 'Tentativa encerrada, anti-spam ativo ou dados inválidos.' })
-  @ApiNotFoundResponse({ description: 'Tentativa, Personagem ou Questão não encontrada.' })
-  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
-  @ApiForbiddenResponse({ description: 'O personagem não pertence ao usuário autenticado.' })
-  responder(
-    @Param('id', ParseIntPipe) tentativaId: number,
-    @Body() dto: ResponderTentativaDto,
-    @Req() requisicao: Request & { usuarioId: number },
-  ) {
-    return this.tentativasSalaService.responderQuestao(tentativaId, dto, requisicao.usuarioId);
-  }
-
-  @Post(':id/desistir')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(AutenticacaoGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Encerra a tentativa atual registrando derrota por desistência' })
-  @ApiParam({ name: 'id', type: Number, description: 'ID da tentativa em andamento' })
-  @ApiOkResponse({ description: 'Desistência registrada com sucesso.' })
-  @ApiBadRequestResponse({ description: 'Tentativa já encerrada ou inválida.' })
-  @ApiNotFoundResponse({ description: 'Tentativa ou Personagem não encontrado.' })
-  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
-  @ApiForbiddenResponse({ description: 'O personagem não pertence ao usuário autenticado.' })
-  desistir(@Param('id', ParseIntPipe) tentativaId: number,@Body() dto: DesistirTentativaDto,@Req() requisicao: Request & { usuarioId: number },
-  ) {
-    return this.tentativasSalaService.desistirTentativa(tentativaId, dto, requisicao.usuarioId);
+  create(@Body('sala_id', ParseIntPipe) @Body() data: CreateTentativasDto) {
+    return this.tentativasSalaService.create(data);
   }
 
   @Get()
@@ -102,8 +67,8 @@ export class TentativasSalaController {
   @ApiNotFoundResponse({ description: 'Tentativa, Personagem ou Sala não encontrada.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: CreateTentativasSalaDto) {
-    return this.tentativasSalaService.update(id, updateDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() data: UpdateTentativasDto) {
+    return this.tentativasSalaService.update(id, data);
   }
 
   @Delete(':id')
@@ -120,13 +85,4 @@ export class TentativasSalaController {
     return this.tentativasSalaService.remove(id);
   }
 
-  @Get('personagem/:personagemId/flawless')
-  @UseGuards(AutenticacaoGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Verifica se o personagem conquistou o Easter Egg de Zero Erros' })
-  @ApiParam({ name: 'personagemId', type: Number, description: 'ID do personagem' })
-  @ApiOkResponse({ description: 'Resultado do Easter Egg retornado com sucesso.' })
-  verificarFlawless(@Param('personagemId', ParseIntPipe) personagemId: number) {
-    return this.tentativasSalaService.verificarEasterEggFlawless(personagemId);
-  }
 }

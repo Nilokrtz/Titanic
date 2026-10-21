@@ -17,7 +17,7 @@ export class ResponderTentativaDto {
   @ApiProperty({ description: 'Alternativa escolhida (A, B, C ou D)', example: 'A' })
   @IsString()
   @IsNotEmpty()
-  @IsIn(['A', 'B', 'C', 'D', 'a', 'b', 'c', 'd'])
+  @IsIn(['A', 'B', 'C', 'D'])
   alternativa_escolhida: string;
 
   @ApiProperty({ description: 'Número da fase/rodada atual', example: 1 })

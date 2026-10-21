@@ -1,8 +1,5 @@
 import { Controller, Get, Header } from '@nestjs/common';
-import { collectDefaultMetrics, register } from 'prom-client';
 import { AppService } from './app.service.js';
-
-collectDefaultMetrics();
 
 @Controller()
 export class AppController {
@@ -13,9 +10,4 @@ export class AppController {
     return this.appService.getHello();
   }
 
-  @Get('metrics')
-  @Header('Content-Type', register.contentType)
-  async getMetrics(): Promise<string> {
-    return register.metrics();
-  }
 }
