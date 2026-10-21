@@ -58,4 +58,32 @@ export class TentativasSalaService {
     return { mensagem: 'Tentativa de sala removida com sucesso.' };
   }
 
+  async CalcularDanoBaseadoNaEspecializacao(data: ResponderTentativaDto) {
+    
+    const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
+    if (!personagem) {
+      throw new NotFoundException('Personagem informado não foi encontrado.');
+    }
+    if (personagem.especializacao_id == null) {
+      throw new BadRequestException('O personagem não possui especialização.');
+    }
+
+    const especilizacaoDoUsuario = await this.repository.buscarEspecializacaoPorId(personagem.especializacao_id);
+    const questao = await this.repository.buscarQuestaoPorId(data.questao_id);
+    let dano = 5;
+    if (!questao) {
+      throw new NotFoundException('Questão informada não foi encontrada.');
+    }
+    
+    if(especilizacaoDoUsuario?.atributo_penalidade === questao.topico_atributo){
+      if(data.alternativa_escolhida !== questao.resposta_correta){
+        dano = dano * 2;
+      }
+    }
+    return dano;
+  }
+
+  async danoBaseadoEmRankingEFase(data: ResponderTentativaDto){
+    const sala = await this.repository.buscarSalaPorId(data.fase);  
+  }
 }

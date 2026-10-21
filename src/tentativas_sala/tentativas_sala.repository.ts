@@ -105,4 +105,10 @@ export class TentativasSalaRepository {
       where: { id },
     });
   }
+  
+  async buscarEspecializacaoPorId(especializacaoId: number) {
+    return this.prisma.especializacoes.findUnique({
+      where: { id: especializacaoId },
+    });
+  }
 }
