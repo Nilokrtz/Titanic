@@ -11,10 +11,10 @@ export class FindQuizQuestoesQueryDto {
   @Min(1)
   sala_id?: number;
 
-  @ApiPropertyOptional({ description: 'Filtro por tópico/atributo da questão', enum: tipo_topico_questao })
+  @ApiPropertyOptional({ description: 'Filtro por tópico da questão', enum: tipo_topico_questao })
   @IsOptional()
   @IsEnum(tipo_topico_questao)
-  topico_atributo?: tipo_topico_questao;
+  topico_questao?: tipo_topico_questao;
 
   @ApiPropertyOptional({ description: 'Filtro parcial por texto no enunciado', example: 'Prisma' })
   @IsOptional()
