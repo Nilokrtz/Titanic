@@ -1,17 +1,30 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, Min } from "class-validator";
+import { IsInt, IsNotEmpty, IsObject, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 
 export class CreateConquistaDto {
-    @ApiProperty({ type: 'string', maxLength: 50, description: 'Nome da conquista', example: 'Conquista MegaBrain' })
-    @IsNotEmpty()
-    @IsString()
-    nome : String;
+    @ApiProperty({ 
+        type: String,
+        maxLength: 50,
+        description: 'Nome da conquista', 
+        example: 'Conquista MegaBrain' })
+    @IsNotEmpty({ message: 'O nome da conquista é obrigatório' })
+    @MaxLength(50, {message: 'O nome da conquista não pode ter mais de 50 caracteres'})
+    @IsString({ message: 'O nome deve ser um texto' })
+    nome : string;
 
-    @ApiProperty({ type: 'string', maxLength: 200, description: 'Descricao da conquista', example: 'Conquista obtida ao derrotar o Boss sem erros' })
-    descricao : String;
+    @ApiProperty({ type: String,
+         maxLength: 200,
+          description: 'Descricao da conquista',
+           example: 'Conquista obtida ao derrotar o Boss sem erros' })
+    @IsOptional()
+    @IsString({ message: 'A descrição deve ser um texto' })
+    descricao : string;
 
 
-    @ApiProperty({ type: 'number', description: 'Recompensa da conquista/insignia/broche sendo o premio em xp ou moedas ou o broche em si', example: 999 })
+    @ApiProperty({ type: Number,
+         description: 'Recompensa da conquista/insignia/broche sendo o premio em xp ou moedas ou o broche em si',
+          example: 999 })
+    @IsInt({ message: 'A recompensa deve ser um número inteiro' })
     @Min(0, {message: 'A recompensa não pode ser negativa'})
     recompensa : number;
 
