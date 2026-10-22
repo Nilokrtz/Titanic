@@ -104,43 +104,56 @@ export class TentativasSalaService {
     let moedas = Number(personagem?.moedas ?? 0);
     let ranking =  Number(personagem?.rank_id);
 
-    if(ranking === sala?.rank_minimo_id && data.tipo_status_tentativas !== 'VITORIA'){
-      while (data.tipo_status_tentativas === 'EM_ANDAMENTO'){
-        const questao = await this.repository.buscarQuestaoPorId(id);
-  
-        id++;
-      }
+    const jaPassouNessaSala = await this.repository.verificarSeJaFezAFase(data.personagem_id, data.sala_id);
+    if (jaPassouNessaSala) {
+      throw ('Esta sala já foi concluida');
     }
-    else{
-      return {message: 'Você não pode entrar aqui!'}
+
+    if (ranking === sala?.rank_minimo_id) {
+      throw ('Nível/Ranking insuficiente para acessar esta sala!');
+    }
+    
+
+    if (data.tipo_status_tentativas === 'DERROTA') {
+      if ((sala?.chefe_nome)?.includes('Diego')) {
+        await this.repository.deletarInventarioDoPersonagemId(data.personagem_id);
+        throw('O Boss Diego derrotou você e destruiu seus itens!');
+      }
+
+      return {message: 'Você foi derrotado'};
+    }
+
+    while (data.tipo_status_tentativas === 'EM_ANDAMENTO'){
+      const questao = await this.repository.buscarQuestaoPorId(id);
+  
+      id++;
     }
 
     if(data.tipo_status_tentativas === 'VITORIA'){
       xpAtual += 50;
       moedas += 5;
       ranking = await this.checkSeUpou(xpAtual);
+      await this.repository.atualizarPersonagem(data.personagem_id, xpAtual, moedas, ranking);
       return {message: 'Parabéns você venceu a fase'}
     }
 
     if((sala?.chefe_nome)?.includes('Diego')) {
       await this.repository.deletarInventarioDoPersonagemId(data.personagem_id);
-
+      console.log("O Boss deletou seus itens")
     }
   }
     
-    async checkSeUpou(xp: number){
-      if(xp == 100 ){
-        return 2;
-      }
-      if(xp == 200 ){
-        return 3;
-      }
-      if(xp == 300 ){
-        return 4;
-      }
-      return 1;  
+  async checkSeUpou(xp: number){
+    if(xp >= 100 ){
+      return 2;
     }
-    
-
+    if(xp >= 200 ){
+      return 3;
+    }
+    if(xp >= 300 ){
+      return 4;
+    }
+    return 1;  
+  }
 }
 

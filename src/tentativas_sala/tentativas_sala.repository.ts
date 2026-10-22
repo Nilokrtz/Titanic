@@ -117,4 +117,25 @@ export class TentativasSalaRepository {
       where: { id: personagemId },
     });
   }
+
+  async verificarSeJaFezAFase(personagemId: number, salaId: number){
+    return await this.prisma.tentativas_sala.findFirst({
+      where: {
+        personagem_id: personagemId,
+        sala_id: salaId,
+        status: 'VITORIA',
+      },
+    });
+  }
+
+  async atualizarPersonagem(personagemId: number, xpAtual: number, moedas: number, rankId: number,) {
+    return this.prisma.personagens.update({
+      where: { id: personagemId },
+      data: {
+        xp_atual: xpAtual,
+        moedas: moedas,
+        rank_id: rankId,
+      },
+    });
+  }
 }
