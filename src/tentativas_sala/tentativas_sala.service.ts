@@ -130,8 +130,8 @@ export class TentativasSalaService {
     }
 
     if(data.tipo_status_tentativas === 'VITORIA'){
-      xpAtual += 50;
-      moedas += 5;
+      xpAtual += Number(sala?.xp_recompensa);
+      moedas += Number(sala?.moedas_recompensa);
       ranking = await this.checkSeUpou(xpAtual);
       await this.repository.atualizarPersonagem(data.personagem_id, xpAtual, moedas, ranking);
       return {message: 'Parabéns você venceu a fase'}
