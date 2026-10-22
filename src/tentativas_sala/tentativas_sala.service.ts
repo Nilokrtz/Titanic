@@ -58,7 +58,7 @@ export class TentativasSalaService {
     return { mensagem: 'Tentativa de sala removida com sucesso.' };
   }
 
-  async CalcularDanoBaseadoNaEspecializacao(data: ResponderTentativaDto) {
+  async CalcularDanoBaseadoNaEspecializacao(data: ResponderTentativaDto): Promise<Number> {
     
     const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
     
@@ -85,15 +85,15 @@ export class TentativasSalaService {
     
     if(especilizacaoDoUsuario?.atributo_penalidade === questao.topico_atributo){
       if(data.alternativa_escolhida !== questao.resposta_correta){
-        return dano = dano * 2;
+        dano = dano * 2;
+        throw {message: 'Resposta errada, você recebeu uma penalidade de dobro de dano'};
       }
       else{
-        return {message: 'Resposta correta, sem penalidade de dano.'};
-        if(data.tipo_status_tentativas === ''){
-
-        }
+        dano = 0
+        throw {message: 'Resposta correta, sem penalidade de dano.'};
       }
     }
+    return dano;
   }
 
   async LogicaJogo(data: ResponderTentativaDto){
@@ -124,6 +124,8 @@ export class TentativasSalaService {
     }
 
     while (data.tipo_status_tentativas === 'EM_ANDAMENTO'){
+      let dano = this.CalcularDanoBaseadoNaEspecializacao(data);
+      this.verificaSeUsuarioEstaVivo(data,dano);
       const questao = await this.repository.buscarQuestaoPorId(id);
   
       id++;
@@ -154,6 +156,21 @@ export class TentativasSalaService {
       return 4;
     }
     return 1;  
+  }
+
+  verificaSeUsuarioEstaVivo(data: ResponderTentativaDto, dano: number){
+    let vidaAtual = data.vida_restante - dano;
+    
+    if(vidaAtual < 0){
+      data.tipo_status_tentativas = 'DERROTA'
+    }
+
+    if(vidaAtual > 100){
+      vidaAtual = 100;
+      console.log({message: 'Você atingiu a vida máxima, sua vida retornou a 100'});
+    }
+    data.vida_restante = vidaAtual;
+    return this.repository.atualizar(data.id, data); 
   }
 }
 

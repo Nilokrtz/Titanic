@@ -2,6 +2,13 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsIn, IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
 
 export class ResponderTentativaDto {
+  
+  @ApiProperty({ description: 'ID da tentativa', example: 1 })
+  @IsInt()
+  @Min(1)
+  @IsNotEmpty()
+  id: number;
+  
   @ApiProperty({ description: 'ID do personagem que realiza a tentativa', example: 1 })
   @IsInt()
   @Min(1)
@@ -31,6 +38,12 @@ export class ResponderTentativaDto {
   @Min(1)
   @IsNotEmpty()
   fase: number;
+
+  @ApiProperty({ description: 'vida do usuário', example: 100 })
+  @IsInt()
+  @Min(1)
+  @IsNotEmpty()
+  vida_restante: number;
 
   @ApiProperty({ description: 'Status da tentativa', example: 'EM_ANDAMENTO' })
   @IsString()
