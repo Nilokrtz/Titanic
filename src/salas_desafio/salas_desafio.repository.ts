@@ -63,7 +63,7 @@ export class SalasDesafioRepository {
       };
     }
 
-    if (filtros.rank_minimo_id !== undefined) {
+    if (!filtros.rank_minimo_id) {
       where.rank_minimo_id = filtros.rank_minimo_id;
     }
 

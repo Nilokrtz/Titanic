@@ -61,29 +61,86 @@ export class TentativasSalaService {
   async CalcularDanoBaseadoNaEspecializacao(data: ResponderTentativaDto) {
     
     const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
+    
     if (!personagem) {
       throw new NotFoundException('Personagem informado não foi encontrado.');
     }
     if (personagem.especializacao_id == null) {
       throw new BadRequestException('O personagem não possui especialização.');
     }
+    
+    const ranking = personagem?.rank_id;
+    
+    if(ranking == null || !ranking ){
+      throw new BadRequestException('O personagem não possui ranking definido.');
+    }
 
     const especilizacaoDoUsuario = await this.repository.buscarEspecializacaoPorId(personagem.especializacao_id);
     const questao = await this.repository.buscarQuestaoPorId(data.questao_id);
-    let dano = 5;
+    let dano = 5 * ranking;
+
     if (!questao) {
       throw new NotFoundException('Questão informada não foi encontrada.');
     }
     
     if(especilizacaoDoUsuario?.atributo_penalidade === questao.topico_atributo){
       if(data.alternativa_escolhida !== questao.resposta_correta){
-        dano = dano * 2;
+        return dano = dano * 2;
+      }
+      else{
+        return {message: 'Resposta correta, sem penalidade de dano.'};
+        if(data.tipo_status_tentativas === ''){
+
+        }
       }
     }
-    return dano;
   }
 
-  async danoBaseadoEmRankingEFase(data: ResponderTentativaDto){
-    const sala = await this.repository.buscarSalaPorId(data.fase);  
+  async LogicaJogo(data: ResponderTentativaDto){
+    const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
+    const sala = await this.repository.buscarSalaPorId(data.sala_id);
+    let id = data.questao_id;
+    let xpAtual = Number(personagem?.xp_atual ?? 0);
+    let moedas = Number(personagem?.moedas ?? 0);
+    let ranking =  Number(personagem?.rank_id);
+
+    if(ranking === sala?.rank_minimo_id && data.tipo_status_tentativas !== 'VITORIA'){
+      while (data.tipo_status_tentativas === 'EM_ANDAMENTO'){
+        const questao = await this.repository.buscarQuestaoPorId(id);
+  
+        id++;
+      }
+    }
+    else{
+      return {message: 'Você não pode entrar aqui!'}
+    }
+
+    if(data.tipo_status_tentativas === 'VITORIA'){
+      xpAtual += 50;
+      moedas += 5;
+      ranking = await this.checkSeUpou(xpAtual);
+      return {message: 'Parabéns você venceu a fase'}
+    }
+
+    if((sala?.chefe_nome)?.includes('Diego')) {
+      await this.repository.deletarInventarioDoPersonagemId(data.personagem_id);
+
+    }
   }
+    
+    async checkSeUpou(xp: number){
+      if(xp == 100 ){
+        return 2;
+      }
+      if(xp == 200 ){
+        return 3;
+      }
+      if(xp == 300 ){
+        return 4;
+      }
+      return 1;  
+    }
+    
+
 }
+

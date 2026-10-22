@@ -21,11 +21,8 @@ export class QuizQuestoesRepository {
   }
 
   async listarComFiltrosEPaginacao(filtros: FindQuizQuestoesQueryDto) {
-    const where: Prisma.quiz_questoesWhereInput = {
-      topico_atributo: ''
-    };
+    const where: Prisma.quiz_questoesWhereInput = {};
 
-    
     if (filtros.sala_id !== undefined) {
       where.sala_id = filtros.sala_id;
     }

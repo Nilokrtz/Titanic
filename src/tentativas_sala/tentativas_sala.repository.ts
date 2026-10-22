@@ -46,15 +46,15 @@ export class TentativasSalaRepository {
   async listarComFiltrosEPaginacao(filtros: FindTentativasQueryDto) {
     const where: Prisma.tentativas_salaWhereInput = {};
 
-    if (filtros.personagem_id !== undefined) {
+    if (!filtros.personagem_id) {
       where.personagem_id = filtros.personagem_id;
     }
 
-    if (filtros.sala_id !== undefined) {
+    if (!filtros.sala_id) {
       where.sala_id = filtros.sala_id;
     }
 
-    if (filtros.status) {
+    if (!filtros.status) {
       where.status = filtros.status;
     }
 
@@ -109,6 +109,12 @@ export class TentativasSalaRepository {
   async buscarEspecializacaoPorId(especializacaoId: number) {
     return this.prisma.especializacoes.findUnique({
       where: { id: especializacaoId },
+    });
+  }
+
+  async deletarInventarioDoPersonagemId(personagemId: number) {
+    return this.prisma.inventario_itens.deleteMany({
+      where: { id: personagemId },
     });
   }
 }
