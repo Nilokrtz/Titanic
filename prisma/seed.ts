@@ -75,6 +75,36 @@ async function main(){
     },
   });
 
+   const rankJunior = await prisma.ranks.upsert({
+    where: { nivel_acesso: 2 },
+    update: {},
+    create: {
+      nome: 'Júnior',
+      nivel_acesso: 2,
+      xp_minimo: 100,
+    },
+  });
+
+  const rankPleno = await prisma.ranks.upsert({
+    where: { nivel_acesso: 3 },
+    update: {},
+    create: {
+      nome: 'Pleno',
+      nivel_acesso: 3,
+      xp_minimo: 200,
+    },
+  });
+
+  const rankSenior = await prisma.ranks.upsert({
+    where: { nivel_acesso: 4 },
+    update: {},
+    create: {
+      nome: 'Senior',
+      nivel_acesso: 4,
+      xp_minimo: 300,
+    },
+  });
+
   const senhaNiloHash = await argon2.hash('senhanilo');
   const senhaAdminHash = await argon2.hash('senhaadmin');
   const senhaMonitorHash = await argon2.hash('senhamonitor');
