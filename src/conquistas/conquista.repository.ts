@@ -29,4 +29,11 @@ export class ConquistasRepository {
 
         return { dados, total };
     }
+
+
+async buscarPorId(id: number) {
+    return this.prisma.itens.findUnique({
+        where: { id },
+    });
+ }
 }

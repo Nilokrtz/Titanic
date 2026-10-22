@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException  } from '@nestjs/common';
 import { CreateConquistaDto } from './dto/create-conquista.dto.js';
 import { UpdateConquistaDto } from './dto/update-conquista.dto.js';
 import { FindConquistasQueryDto } from './dto/find-conquistas-query.dto.js';
@@ -27,8 +27,12 @@ export class ConquistasService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} conquista`;
+  async findOne(id: number) {
+    const conquista = await this.repository.buscarPorId(id);
+    if (!conquista) {
+      throw new NotFoundException(`Conquista com ID ${id} nao encontrada.`);
+    }
+    return conquista;
   }
 
   update(id: number, updateConquistaDto: UpdateConquistaDto) {
