@@ -63,4 +63,20 @@ async remover(id: number) {
         where: { id },
     });
 }
+
+async buscarProgressoPersonagem(personagemId: number) {
+    const [personagem, tentativas, todasConquistas] = await Promise.all([
+          this.prisma.personagens.findUnique({
+            where: { id: personagemId },
+          }),
+          this.prisma.tentativas_sala.findMany({
+            where: { personagem_id: personagemId },
+            include: { salas_desafio: true },
+          }),
+          this.prisma.conquistas.findMany({
+            orderBy: { id: 'asc' },
+          }),
+        ]);
+        return { personagem, tentativas, todasConquistas };
+    }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException  } from '@nestjs/common';
+import { Injectable, NotFoundException , BadRequestException } from '@nestjs/common';
 import { CreateConquistaDto } from './dto/create-conquista.dto.js';
 import { UpdateConquistaDto } from './dto/update-conquista.dto.js';
 import { FindConquistasQueryDto } from './dto/find-conquistas-query.dto.js';
@@ -54,4 +54,23 @@ export class ConquistasService {
     }
     return await this.repository.remover(id);
   }
-}
+
+  async verificarProgresso(personagemId: number) {
+    const dados = await this.repository.buscarProgressoPersonagem(personagemId);
+    
+    if (!dados.personagem) {
+      throw new BadRequestException(`Personagem com ID ${personagemId} nao encontrado.`);
+    }
+    const personagem = dados.personagem;
+    const conquistas = dados.conquistas;
+    const tentativas = dados.tentativas;
+
+    let totalErros = 0;
+    let venceuEevee = false;
+    let venceuBossFinal = false;
+    let venceuPrimeiraSala = false;
+
+    for (const tentativa of tentativas) {
+      if(tentativa.erros){
+        totalErros = totalErros + tentativa.erros;
+      }

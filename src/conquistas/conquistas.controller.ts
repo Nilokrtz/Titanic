@@ -45,5 +45,13 @@ export class ConquistasController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.conquistasService.remove(+id);
-  }
+}
+
+@Get('progresso/:personagemId')
+@UseGuards(AutenticacaoGuard)
+@ApiBearerAuth('JWT-auth')
+@ApiOperation({ summary: 'Consultar progresso automático de conquistas do personagem' })
+ async verificarProgresso(@Param('personagemId', ParseIntPipe) personagemId: number) {
+  return await this.conquistasService.verificarProgresso(personagemId);
+}
 }

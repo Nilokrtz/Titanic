@@ -274,7 +274,7 @@ const conquistasIniciais = [
 },
 {
   nome: 'Vorcaro no Prime',
-  descricao: 'Parabens voce gastou todas as suas moedas...',
+  descricao: 'Parabens voce e um magnata...',
   recompensa: 999,
 },
 {
