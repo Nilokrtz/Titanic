@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -85,4 +85,12 @@ export class TentativasSalaController {
     return this.tentativasSalaService.remove(id);
   }
 
+  @Post('responder')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Usuário manda uma resposta' })
+  @ApiCreatedResponse({ description: 'Resposta enviada com sucesso.' })
+  responder( @Body() dto: ResponderTentativaDto) {
+    return this.tentativasSalaService.respostaUsuario(dto);
+  }
 }

@@ -109,10 +109,9 @@ export class TentativasSalaService {
       throw ('Esta sala já foi concluida');
     }
 
-    if (ranking === sala?.rank_minimo_id) {
+    if (ranking < Number(sala?.rank_minimo_id)) {
       throw ('Nível/Ranking insuficiente para acessar esta sala!');
     }
-    
 
     if (data.tipo_status_tentativas === 'DERROTA') {
       if ((sala?.chefe_nome)?.includes('Diego')) {
@@ -124,10 +123,9 @@ export class TentativasSalaService {
     }
 
     while (data.tipo_status_tentativas === 'EM_ANDAMENTO'){
-      let dano = this.CalcularDanoBaseadoNaEspecializacao(data);
-      this.verificaSeUsuarioEstaVivo(data,dano);
-      const questao = await this.repository.buscarQuestaoPorId(id);
-  
+      let dano = Number(this.CalcularDanoBaseadoNaEspecializacao(data));
+      this.verificaSeUsuarioEstaVivo(data, dano);
+      const questao = await this.repository.buscarQuestaoPorId(id);  
       id++;
     }
 
@@ -158,10 +156,10 @@ export class TentativasSalaService {
     return 1;  
   }
 
-  verificaSeUsuarioEstaVivo(data: ResponderTentativaDto, dano: number){
+  async verificaSeUsuarioEstaVivo(data: ResponderTentativaDto, dano: number){
     let vidaAtual = data.vida_restante - dano;
     
-    if(vidaAtual < 0){
+    if(vidaAtual <= 0){
       data.tipo_status_tentativas = 'DERROTA'
     }
 
@@ -171,6 +169,16 @@ export class TentativasSalaService {
     }
     data.vida_restante = vidaAtual;
     return this.repository.atualizar(data.id, data); 
+  }
+
+  async respostaUsuario(data: ResponderTentativaDto){
+    const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
+
+    if (!personagem) {
+      throw new NotFoundException('Personagem informado não foi encontrado.');
+    }
+
+    return this.LogicaJogo(data);
   }
 }
 
