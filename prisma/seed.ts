@@ -200,9 +200,24 @@ async function main(){
       chefe_nome: 'Eduardo',
       materia_foco: 'back_end',
       xp_recompensa: 100,
-      moedas_recompensa: 20,
-      dano_base_erro: 15,
+      moedas_recompensa: 50,
+      dano_base_erro: 10,
       rank_minimo_id: rankEstagiario.id,
+    },
+  });
+
+  const sala2 = await prisma.salas_desafio.upsert({
+    where: {numero_sala: 317},
+    update: {},
+    create: {
+      numero_sala: 317,
+      nome: 'Sala - Foco(seguranca)',
+      chefe_nome: 'Emilio',
+      materia_foco: 'seguranca',
+      xp_recompensa: 50,
+      moedas_recompensa: 50,
+      dano_base_erro: 15,
+      rank_minimo_id: rankJunior.id,
     },
   });
 
