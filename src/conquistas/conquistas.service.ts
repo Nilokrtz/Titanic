@@ -8,8 +8,12 @@ import { ConquistasRepository } from './conquista.repository.js';
 export class ConquistasService {
   constructor(private readonly repository: ConquistasRepository) {}
   
-  create(createConquistaDto: CreateConquistaDto) {
-    return 'This action adds a new conquista';
+  async create(dados: CreateConquistaDto) {
+    const conquistaExiste = await this.repository.buscarPorNome(dados.nome);
+    if (conquistaExiste) {
+      throw new Error(`Conquista com nome ${dados.nome} ja existe.`);
+    }
+    return await this.repository.criar(dados);
   }
 
   async findAll(query: FindConquistasQueryDto) {

@@ -5,6 +5,6 @@ CREATE TABLE "conquistas" (
     "recompensa" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "conquistas_pkey" PRIMARY KEY ("id")
-)
+);
 
 CREATE UNIQUE INDEX "conquistas_nome_key" ON "conquistas" ("nome");

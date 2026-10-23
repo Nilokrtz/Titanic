@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { FindConquistasQueryDto } from './dto/find-conquistas-query.dto.js';
 import { UpdateConquistaDto } from './dto/update-conquista.dto.js';
+import { CreateConquistaDto } from './dto/create-conquista.dto.js';
 
 @Injectable()
 export class ConquistasRepository {
@@ -32,6 +33,17 @@ export class ConquistasRepository {
     }
 
 
+async criar (dados: CreateConquistaDto) {
+    return this.prisma.conquistas.create({
+        data: dados
+    });
+}
+
+async buscarPorNome(nome: string) {
+    return this.prisma.conquistas.findUnique({
+        where: { nome },
+    });
+}
 async buscarPorId(id: number) {
     return this.prisma.conquistas.findUnique({
         where: { id },
@@ -42,6 +54,13 @@ async atualizar(id: number, dados: UpdateConquistaDto) {
     return this.prisma.conquistas.update({
         where: { id },
         data: dados
+    });
+}
+
+ 
+async remover(id: number) {
+    return this.prisma.conquistas.delete({
+        where: { id },
     });
 }
 }
