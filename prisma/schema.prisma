@@ -173,3 +173,10 @@ enum tipo_topico_questao {
   back_end
   logica
 }
+
+model conquistas {
+id            Int   @id @default(autoincrement())
+nome       String   @unique @db.VarChar(50)
+descricao  String?  @db.VarChar(200)
+recompensa   Int    @default(0)
+}

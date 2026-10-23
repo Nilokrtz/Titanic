@@ -35,11 +35,19 @@ export class ConquistasService {
     return conquista;
   }
 
-  update(id: number, updateConquistaDto: UpdateConquistaDto) {
-    return `This action updates a #${id} conquista`;
+  async update(id: number, updateConquistaDto: UpdateConquistaDto) {
+    const conquista = await this.repository.buscarPorId(id);
+    if (!conquista) {
+      throw new NotFoundException(`Conquista com ID ${id} nao encontrada.`);
+    }
+    return await this.repository.atualizar(id, updateConquistaDto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} conquista`;
+  async remove(id: number) {
+    const conquista = await this.repository.buscarPorId(id);
+    if (!conquista) {
+      throw new NotFoundException(`Conquista com ID ${id} nao encontrada.`);
+    }
+    return await this.repository.remover(id);
   }
 }

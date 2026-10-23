@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { FindConquistasQueryDto } from './dto/find-conquistas-query.dto.js';
+import { UpdateConquistaDto } from './dto/update-conquista.dto.js';
 
 @Injectable()
 export class ConquistasRepository {
@@ -18,13 +19,13 @@ export class ConquistasRepository {
         }
 
         const [dados, total] = await Promise.all([
-            this.prisma.itens.findMany({
+            this.prisma.conquistas.findMany({
                 where,
                 skip,
                 take: limit,
                 orderBy: { id: 'asc' },
             }),
-            this.prisma.itens.count({ where }),
+            this.prisma.conquistas.count({ where }),
         ]);
 
         return { dados, total };
@@ -32,8 +33,15 @@ export class ConquistasRepository {
 
 
 async buscarPorId(id: number) {
-    return this.prisma.itens.findUnique({
+    return this.prisma.conquistas.findUnique({
         where: { id },
     });
  }
+
+async atualizar(id: number, dados: UpdateConquistaDto) {
+    return this.prisma.conquistas.update({
+        where: { id },
+        data: dados
+    });
+}
 }
