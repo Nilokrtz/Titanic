@@ -62,15 +62,71 @@ export class ConquistasService {
       throw new BadRequestException(`Personagem com ID ${personagemId} nao encontrado.`);
     }
     const personagem = dados.personagem;
-    const conquistas = dados.conquistas;
+    const conquistas = dados.todasConquistas;
     const tentativas = dados.tentativas;
 
     let totalErros = 0;
     let venceuEevee = false;
     let venceuBossFinal = false;
-    let venceuPrimeiraSala = false;
+    let monitoresDerrotados = false;
+  
+
 
     for (const tentativa of tentativas) {
       if(tentativa.erros){
-        totalErros = totalErros + tentativa.erros;
+        totalErros += tentativa.erros;
       }
+
+    if (tentativa.status === 'VITORIA' )  {
+      const chefe = tentativa.salas_desafio?.chefe_nome?.toLowerCase() || '';
+      const nomeSala = tentativa.salas_desafio?.nome?.toLowerCase() || '';
+      
+      if (chefe === 'eevee' || nomeSala.includes('eevee')) {
+        venceuEevee = true;
+      }
+
+      if (chefe.includes('eduardo') && chefe.includes('gabriel')) {
+        monitoresDerrotados = true;
+      }
+  
+
+      if (chefe.includes('boss final') || nomeSala.includes('boss final')) {
+        venceuBossFinal = true;
+      }
+    }
+  }
+
+  const resultado = conquistas.map(conquista => {
+    let progresso = false;
+
+    if (conquista.nome.includes('trabalho infinito')) {
+      progresso = venceuEevee;
+    } else if (conquista.nome.includes('Diploma Desbloqueado')) {
+      progresso = venceuBossFinal;
+    } else if (conquista.nome.includes('MegaBrain Unlocked')) {
+      progresso = venceuBossFinal && totalErros === 0;
+    } else if (conquista.nome.includes('Muquirana')) {
+      progresso = (personagem.moedas ?? 0) >= 350;
+    } else if (conquista.nome.includes('Mestre dos Monitores')) {
+      progresso = monitoresDerrotados;
+    }
+
+    return {
+      id: conquista.id,
+      nome: conquista.nome,
+      descricao: conquista.descricao,
+      recompensa: conquista.recompensa,
+      progresso,
+      status: progresso ? 'DESBLOQUEADA' : 'BLOQUEADA',
+    };
+  });
+
+  return {
+    personagem: personagem.nome,
+    moedas_atual: (personagem.moedas ?? 0),
+    total_erros: totalErros,
+    conquistas: resultado,
+  };
+ }
+}
+  

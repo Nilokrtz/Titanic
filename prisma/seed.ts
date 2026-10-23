@@ -259,28 +259,28 @@ const conquistasIniciais = [
   {
     nome: 'Em busca do trabalho infinito',
     descricao: 'Parabens voce finalmente completou a sala do Eevee',
-    recompensa: 200 ,
+    recompensa: 50 ,
   },
 
 {
   nome: 'Diploma Desbloqueado (Ou quase...)',
   descricao: 'Derrotou o Final Boss e concluiu sem trancar o curso...',
-  recompensa: 300,
+  recompensa: 150,
 },
 {
   nome: 'MegaBrain Unlocked',
   descricao: 'Parabens voce zerou o jogo sem errar nenhuma questao, voce tem um verdadeiro Big Brain',
-  recompensa: 500,
+  recompensa: 300,
 },
 {
-  nome: 'Vorcaro no Prime',
-  descricao: 'Parabens voce e um magnata...',
-  recompensa: 999,
+  nome: 'Voce e um Muquirana',
+  descricao: 'Parabens atingiu o maximo de moedas possiveis sem gastar nada',
+  recompensa: 150,
 },
 {
   nome: 'O Mestre dos Monitores',
   descricao: 'Parabens voce derrotou todos os monitores',
-  recompensa: 150,
+  recompensa: 100,
 }
 
 
