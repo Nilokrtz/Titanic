@@ -253,8 +253,47 @@ async function main(){
   });
 
   console.log('Povoamento completo concluído com sucesso!');
+
+
+const conquistasIniciais = [
+  {
+    nome: 'Em busca do trabalho infinito',
+    descricao: 'Parabens voce finalmente completou a sala do Eevee',
+    recompensa: 200 ,
+  },
+
+{
+  nome: 'Diploma Desbloqueado (Ou quase...)',
+  descricao: 'Derrotou o Final Boss e concluiu sem trancar o curso...',
+  recompensa: 300,
+},
+{
+  nome: 'MegaBrain Unlocked',
+  descricao: 'Parabens voce zerou o jogo sem errar nenhuma questao, voce tem um verdadeiro Big Brain',
+  recompensa: 500,
+},
+{
+  nome: 'Vorcaro no Prime',
+  descricao: 'Parabens voce gastou todas as suas moedas...',
+  recompensa: 999,
+},
+{
+  nome: 'O Mestre dos Monitores',
+  descricao: 'Parabens voce derrotou todos os monitores',
+  recompensa: 150,
 }
 
+
+];
+
+for (const conquista of conquistasIniciais) {
+  await prisma.conquistas.upsert({
+    where: { nome: conquista.nome },
+    update: {},
+    create: conquista,
+  });
+}
+}
 main()
   .catch((e) =>{
     console.error('Erro durante a execução do seed: ', e);
