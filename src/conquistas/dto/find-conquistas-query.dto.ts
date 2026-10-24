@@ -31,4 +31,11 @@ export class FindConquistasQueryDto {
     @MaxLength(50, {message: 'O nome da conquista não pode ter mais de 50 caracteres'})
     nome?: string;
 
+    @ApiPropertyOptional({ type: String, 
+        description: 'filtrar por descrição da conquista',
+         example: 'Parabens voce zerou o jogo sem errar nenhuma questao, voce tem um verdadeiro Big Brain' })
+    @IsOptional()
+    @IsString({message: 'A descrição da conquista deve ser um texto'})
+    @MaxLength(200, {message: 'A descrição da conquista não pode ter mais de 200 caracteres'})
+    descricao?: string;
 }

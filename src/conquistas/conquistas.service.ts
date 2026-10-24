@@ -11,7 +11,7 @@ export class ConquistasService {
   async create(dados: CreateConquistaDto) {
     const conquistaExiste = await this.repository.buscarPorNome(dados.nome);
     if (conquistaExiste) {
-      throw new Error(`Conquista com nome ${dados.nome} ja existe.`);
+      throw new BadRequestException(`Conquista com nome ${dados.nome} ja existe.`);
     }
     return await this.repository.criar(dados);
   }

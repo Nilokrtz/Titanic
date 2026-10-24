@@ -18,6 +18,7 @@ export class CreateConquistaDto {
            example: 'Conquista obtida ao derrotar o Boss sem erros' })
     @IsOptional()
     @IsString({ message: 'A descrição deve ser um texto' })
+    @MaxLength(200, {message: 'A descrição da conquista não pode ter mais de 200 caracteres'})
     descricao : string;
 
 

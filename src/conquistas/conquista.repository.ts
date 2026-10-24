@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { FindConquistasQueryDto } from './dto/find-conquistas-query.dto.js';
 import { UpdateConquistaDto } from './dto/update-conquista.dto.js';
 import { CreateConquistaDto } from './dto/create-conquista.dto.js';
+import { contains } from 'class-validator';
 
 @Injectable()
 export class ConquistasRepository {
@@ -17,6 +18,10 @@ export class ConquistasRepository {
 
         if (filtros.nome) {
             where.nome = { contains: filtros.nome, mode: 'insensitive' };
+        }
+
+        if(filtros.descricao){
+            where.descricao = {contains: filtros.descricao, mode: 'insensitive'}
         }
 
         const [dados, total] = await Promise.all([
