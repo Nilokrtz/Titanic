@@ -101,9 +101,18 @@ model ranks {
   salas_desafio salas_desafio[]
 }
 
+model disciplinas {
+  id        Int               @id @default(autoincrement())
+  nome      String            @unique @db.VarChar(100)
+  descricao String?           @db.VarChar(255)
+  ativo     Boolean           @default(true)
+  salas     salas_desafio[]
+}
+
 model salas_desafio {
   id                Int               @id @default(autoincrement())
   rank_minimo_id    Int?
+  disciplina_id     Int?
   numero_sala       Int               @unique
   nome              String            @db.VarChar(100)
   chefe_nome        String?           @db.VarChar(80)
@@ -112,6 +121,7 @@ model salas_desafio {
   moedas_recompensa Int
   dano_base_erro    Int
   quiz_questoes     quiz_questoes[]
+  disciplinas       disciplinas?      @relation(fields: [disciplina_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   ranks             ranks?            @relation(fields: [rank_minimo_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tentativas_sala   tentativas_sala[]
 }
