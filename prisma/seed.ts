@@ -191,9 +191,27 @@ async function main(){
     },
   });
 
+  const disciplinaBackend = await prisma.disciplinas.upsert({
+    where: { nome: 'Back-end' },
+    update: {},
+    create: {
+      nome: 'Back-end',
+      descricao: 'Desenvolvimento de APIs e regras de negócio',
+    },
+  });
+
+  const disciplinaSeguranca = await prisma.disciplinas.upsert({
+    where: { nome: 'Segurança' },
+    update: {},
+    create: {
+      nome: 'Segurança',
+      descricao: 'Segurança da informação e proteção de sistemas',
+    },
+  });
+
   const sala1 = await prisma.salas_desafio.upsert({
     where: {numero_sala: 316},
-    update: {},
+    update: { disciplina_id: disciplinaBackend.id },
     create: {
       numero_sala: 316,
       nome: 'Sala - Foco(Back-end)',
@@ -203,12 +221,13 @@ async function main(){
       moedas_recompensa: 50,
       dano_base_erro: 10,
       rank_minimo_id: rankEstagiario.id,
+      disciplina_id: disciplinaBackend.id,
     },
   });
 
   const sala2 = await prisma.salas_desafio.upsert({
     where: {numero_sala: 317},
-    update: {},
+    update: { disciplina_id: disciplinaSeguranca.id },
     create: {
       numero_sala: 317,
       nome: 'Sala - Foco(seguranca)',
@@ -218,6 +237,7 @@ async function main(){
       moedas_recompensa: 50,
       dano_base_erro: 15,
       rank_minimo_id: rankJunior.id,
+      disciplina_id: disciplinaSeguranca.id,
     },
   });
 
