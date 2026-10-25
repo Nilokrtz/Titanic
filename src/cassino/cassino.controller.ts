@@ -38,8 +38,15 @@ export class CassinoController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.cassinoService.findOne(+id);
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Obter uma opção do cassino pelo ID'})
+  @ApiParam({ name: 'id', type: Number, description: 'ID da opção desejada', example: 1})
+  @ApiOkResponse({ description: 'Opção do cassino retornada com sucesso'})
+  @ApiNotFoundResponse({ description: 'Opção do cassino não encontrada'})
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido'})
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.cassinoService.findOne(id);
   }
 
   @Patch(':id')

@@ -32,8 +32,12 @@ export class CassinoService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} cassino`;
+  async findOne(id: number) {
+    const opcao = await this.repository.buscarPorId(id)
+    if(!opcao){
+      throw new NotFoundException(`Opção com ID ${id} não encontrada.`)
+    }
+    return opcao;
   }
 
   update(id: number, updateCassinoDto: UpdateCassinoDto) {
