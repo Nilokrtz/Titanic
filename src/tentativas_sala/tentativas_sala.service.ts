@@ -113,6 +113,11 @@ export class TentativasSalaService {
       throw ('Nível/Ranking insuficiente para acessar esta sala!');
     }
 
+    if((sala?.chefe_nome)?.includes('Diego')) {
+      await this.repository.deletarInventarioDoPersonagemId(data.personagem_id);
+      console.log("O Boss deletou seus itens")
+    }
+
     if (data.tipo_status_tentativas === 'DERROTA') {
       if ((sala?.chefe_nome)?.includes('Diego')) {
         await this.repository.deletarInventarioDoPersonagemId(data.personagem_id);
@@ -121,25 +126,21 @@ export class TentativasSalaService {
 
       return {message: 'Você foi derrotado'};
     }
-
-    while (data.tipo_status_tentativas === 'EM_ANDAMENTO'){
+    else if(data.tipo_status_tentativas === 'EM_ANDAMENTO'){
       let dano = Number(this.CalcularDanoBaseadoNaEspecializacao(data));
       this.verificaSeUsuarioEstaVivo(data, dano);
-      const questao = await this.repository.buscarQuestaoPorId(id);  
+      const Proximaquestao = await this.repository.buscarQuestaoPorId(id);  
       id++;
     }
-
-    if(data.tipo_status_tentativas === 'VITORIA'){
+    else if(data.tipo_status_tentativas === 'VITORIA'){
       xpAtual += Number(sala?.xp_recompensa);
       moedas += Number(sala?.moedas_recompensa);
       ranking = await this.checkSeUpou(xpAtual);
       await this.repository.atualizarPersonagem(data.personagem_id, xpAtual, moedas, ranking);
       return {message: 'Parabéns você venceu a fase'}
     }
-
-    if((sala?.chefe_nome)?.includes('Diego')) {
-      await this.repository.deletarInventarioDoPersonagemId(data.personagem_id);
-      console.log("O Boss deletou seus itens")
+    else{
+      return {message: 'Status tentativas incorreto'}
     }
   }
     
@@ -161,6 +162,7 @@ export class TentativasSalaService {
     
     if(vidaAtual <= 0){
       data.tipo_status_tentativas = 'DERROTA'
+      console.log({message: 'Acabou  sua vida, você morreu'});
     }
 
     if(vidaAtual > 100){
