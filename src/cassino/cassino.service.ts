@@ -1,11 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateCassinoDto } from './dto/create-cassino.dto.js';
 import { UpdateCassinoDto } from './dto/update-cassino.dto.js';
+import { FindCassinoQueryDto } from './dto/find-cassino-query.dto.js';
+import { CassinoRepository } from './cassino.repository.js';
 
 @Injectable()
 export class CassinoService {
-  create(createCassinoDto: CreateCassinoDto) {
-    return 'This action adds a new cassino';
+  constructor(private readonly repository: CassinoRepository) {}
+
+  async create(dados: CreateCassinoDto) {
+    const opcaoExiste = await this.repository.buscarPorNome(dados.nome);
+    if(opcaoExiste){
+      throw new BadRequestException(`Opção '${dados.nome}' já existe.`)
+    }
+    return await this.repository.criar(dados);
   }
 
   findAll() {
