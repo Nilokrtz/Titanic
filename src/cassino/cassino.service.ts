@@ -40,8 +40,15 @@ export class CassinoService {
     return opcao;
   }
 
-  update(id: number, updateCassinoDto: UpdateCassinoDto) {
-    return `This action updates a #${id} cassino`;
+  async update(id: number, updateCassinoDto: UpdateCassinoDto) {
+    await this.findOne(id);
+    if(updateCassinoDto.nome !== undefined){
+      const opcaoComMesmoNome = await this.repository.buscarPorNome(updateCassinoDto.nome);
+      if(opcaoComMesmoNome && opcaoComMesmoNome.id !== id){
+        throw new BadRequestException(`A opção com o nome "${updateCassinoDto.nome}" já existe.`)
+      }
+    }
+    return await this.repository.atualizar(id, updateCassinoDto);
   }
 
   remove(id: number) {

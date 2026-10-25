@@ -50,8 +50,18 @@ export class CassinoController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCassinoDto: UpdateCassinoDto) {
-    return this.cassinoService.update(+id, updateCassinoDto);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: 'Atualizar os dados de uma opção do cassino'})
+  @ApiParam({ name: 'id', type: Number, description: 'ID da opção do cassino', example: 1})
+  @ApiOkResponse({ description: 'Opção atualizada com sucesso'})
+  @ApiBadRequestResponse({ description: 'dados inválido'})
+  @ApiUnauthorizedResponse({ description: 'token inválido ou ausente'})
+  @ApiForbiddenResponse({ description: 'Perfil sem permissão'})
+  @ApiNotFoundResponse({ description: 'Opção não encontrada para o ID informado'})
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateCassinoDto: UpdateCassinoDto) {
+    return this.cassinoService.update(id, updateCassinoDto);
   }
 
   @Delete(':id')
