@@ -73,4 +73,53 @@ export class CassinoRepository{
             orderBy: { id: 'asc' }
         });
     }
+
+    async buscarPersonagemPorId(personagemId: number) {
+    return this.prisma.personagens.findUnique({
+      where: { id: personagemId },
+    });
+  }
+
+  async atualizarMoedasPersonagem(personagemId: number, moedas: number) {
+    return this.prisma.personagens.update({
+      where: { id: personagemId },
+      data: { moedas },
+    });
+  }
+
+  async buscarTodosItens() {
+    return this.prisma.itens.findMany();
+  }
+
+  async buscarInventarioPersonagem(personagemId: number) {
+    return this.prisma.inventario_itens.findMany({
+      where: { personagem_id: personagemId },
+    });
+  }
+
+  async buscarItemNoInventario(personagemId: number, itemId: number) {
+    return this.prisma.inventario_itens.findFirst({
+      where: {
+        personagem_id: personagemId,
+        item_id: itemId,
+      },
+    });
+  }
+
+  async incrementarQuantidadeItem(inventarioId: number, quantidadeAtual: number) {
+    return this.prisma.inventario_itens.update({
+      where: { id: inventarioId },
+      data: { quantidade: quantidadeAtual + 1 },
+    });
+  }
+
+  async adicionarNovoItemInventario(personagemId: number, itemId: number) {
+    return this.prisma.inventario_itens.create({
+      data: {
+        personagem_id: personagemId,
+        item_id: itemId,
+        quantidade: 1,
+      },
+    });
+  }
 }
