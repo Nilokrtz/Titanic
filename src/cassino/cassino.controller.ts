@@ -77,4 +77,16 @@ export class CassinoController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.cassinoService.remove(id);
   }
+
+  @Post('apostar/:personagemId')
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Executar uma aposta no cassino' })
+  @ApiParam({ name: 'personagemId', type: Number, description: 'ID do personagem que irá apostar', example: 1 })
+  @ApiOkResponse({ description: 'Resultado da aposta gerado com sucesso.' })
+  @ApiBadRequestResponse({ description: 'Saldo insuficiente ou personagem não encontrado.' })
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
+  apostar(@Param('personagemId', ParseIntPipe) personagemId: number) {
+    return this.cassinoService.apostar(personagemId);
+  }
 }
