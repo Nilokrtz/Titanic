@@ -25,6 +25,10 @@ export class SalasDesafioService {
       }
     }
 
+    if (createDto.disciplina_id) {
+      await this.validarDisciplina(createDto.disciplina_id);
+    }
+
     const sala = await this.repository.criar(createDto);
     await this.cache.limpar('salas:');
     return sala;
@@ -62,6 +66,13 @@ export class SalasDesafioService {
       }
     }
 
+    if (
+      updateDto.disciplina_id !== undefined &&
+      updateDto.disciplina_id !== null
+    ) {
+      await this.validarDisciplina(updateDto.disciplina_id);
+    }
+
     const sala = await this.repository.atualizarSala(id, updateDto);
     await this.cache.limpar('salas:');
     await this.cache.limpar('questoes:lista:');
@@ -79,5 +90,19 @@ export class SalasDesafioService {
     await this.cache.limpar('salas:');
     await this.cache.limpar('questoes:lista:');
     return { mensagem: 'Sala de desafio removida com sucesso.' };
+  }
+
+  private async validarDisciplina(disciplinaId: number) {
+    const disciplina =
+      await this.repository.buscarDisciplinaPorId(disciplinaId);
+    if (!disciplina) {
+      throw new NotFoundException('Disciplina informada não foi encontrada.');
+    }
+
+    if (!disciplina.ativo) {
+      throw new BadRequestException(
+        'Não é possível vincular uma sala a uma disciplina inativa.',
+      );
+    }
   }
 }

@@ -20,6 +20,13 @@ export class FindSalasQueryDto {
   @Min(1)
   rank_minimo_id?: number;
 
+  @ApiPropertyOptional({ description: 'Filtro por ID da disciplina', example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  disciplina_id?: number;
+
   @ApiPropertyOptional({ description: 'Número da página (padrão: 1)', example: 1, default: 1 })
   @IsOptional()
   @Type(() => Number)
