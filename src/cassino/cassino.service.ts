@@ -16,8 +16,20 @@ export class CassinoService {
     return await this.repository.criar(dados);
   }
 
-  findAll() {
-    return `This action returns all cassino`;
+  async findAll(query: FindCassinoQueryDto) {
+    const page = query;page ?? 1
+    const limit = query.limit ?? 10
+
+    const { dados, total} = await this.repository.listarComPaginacao(query);
+    const totalPaginas = Math.ceil(total/limit)
+
+    return{
+      dados,
+      total,
+      page,
+      limit,
+      totalPaginas
+    };
   }
 
   findOne(id: number) {

@@ -28,8 +28,13 @@ export class CassinoController {
   }
 
   @Get()
-  findAll() {
-    return this.cassinoService.findAll();
+  @UseGuards(AutenticacaoGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Listar opções do cassino com paginação e filtros'})
+  @ApiOkResponse({ description: 'Lista de opções retornada com sucesso'})
+  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido'})
+  findAll(@Query() query: FindCassinoQueryDto) {
+    return this.cassinoService.findAll(query);
   }
 
   @Get(':id')
