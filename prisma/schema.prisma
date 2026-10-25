@@ -190,3 +190,12 @@ nome       String   @unique @db.VarChar(50)
 descricao  String?  @db.VarChar(200)
 recompensa   Int    @default(0)
 }
+
+model cassino {
+  id                 Int     @id @default(autoincrement())
+  nome               String  @db.VarChar(50)
+  tipo_recompensa    String  @db.VarChar(20) 
+  valor_recompensa   Int     @default(0)     
+  chance_porcentagem Int                     
+  descricao          String? @db.VarChar(200)
+}

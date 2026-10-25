@@ -21,16 +21,22 @@ export class SalasDesafioRepository {
     });
   }
 
+  async buscarDisciplinaPorId(disciplinaId: number) {
+    return this.prisma.disciplinas.findUnique({
+      where: { id: disciplinaId },
+    });
+  }
+
   async criar(data: CreateSalasDesafioDto) {
     return this.prisma.salas_desafio.create({
       data,
-      include: {ranks: true,},
+      include: {ranks: true, disciplinas: true},
     });
   }
 
   async listarTodasAsSalas(){
     return this.prisma.salas_desafio.findMany({
-      include:{ranks: true},
+      include:{ranks: true, disciplinas: true},
       orderBy:{numero_sala: 'asc'}
     });
   }
@@ -38,7 +44,7 @@ export class SalasDesafioRepository {
   async buscarSalaPorId(id: number){
     return this.prisma.salas_desafio.findUnique({
       where:{id},
-      include:{ranks: true}
+      include:{ranks: true, disciplinas: true}
     });
   }
 
@@ -46,7 +52,7 @@ export class SalasDesafioRepository {
     return this.prisma.salas_desafio.update({
       where: {id},
       data,
-      include:{ranks: true}
+      include:{ranks: true, disciplinas: true},
     });
   }
   async remover(id: number){
@@ -76,6 +82,10 @@ export class SalasDesafioRepository {
       where.rank_minimo_id = filtros.rank_minimo_id;
     }
 
+    if (filtros.disciplina_id !== undefined) {
+      where.disciplina_id = filtros.disciplina_id;
+    }
+
     const page = filtros.page ?? 1;
     const limit = filtros.limit ?? 10;
     const skip = (page - 1) * limit;
@@ -83,7 +93,7 @@ export class SalasDesafioRepository {
     const [items, total] = await Promise.all([
       this.prisma.salas_desafio.findMany({
         where,
-        include: {ranks: true},
+        include: {ranks: true, disciplinas: true},
         orderBy: {numero_sala: 'asc'},
         skip,
         take: limit,

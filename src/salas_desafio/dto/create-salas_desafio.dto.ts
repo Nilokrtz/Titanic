@@ -45,4 +45,10 @@ export class CreateSalasDesafioDto {
   @IsInt()
   @Min(1)
   rank_minimo_id?: number;
+
+  @ApiPropertyOptional({ type: 'integer', minimum: 1, description: 'ID da disciplina à qual a sala pertence', example: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  disciplina_id?: number;
 }
