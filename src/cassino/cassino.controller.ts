@@ -65,7 +65,16 @@ export class CassinoController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cassinoService.remove(+id);
+  @UseGuards(AutenticacaoGuard, RolesGuard)
+  @Roles(tipo_perfil.ADMIN_PROFESSOR)
+  @ApiBearerAuth("JWT-auth")
+  @ApiOperation({ summary: 'Deletar uma opção do cassino'})
+  @ApiParam({ name: 'id', type: Number, description: 'ID da opção do cassino', example: 1})
+  @ApiOkResponse({ description: 'Opção deletada com sucesso'})
+  @ApiUnauthorizedResponse({ description: 'token inválido ou ausente'})
+  @ApiForbiddenResponse({ description: 'Perfil sem permissão'})
+  @ApiNotFoundResponse({ description: 'Opção não encontrada para o ID informado'})
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.cassinoService.remove(id);
   }
 }

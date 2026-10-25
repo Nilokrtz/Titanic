@@ -51,7 +51,8 @@ export class CassinoService {
     return await this.repository.atualizar(id, updateCassinoDto);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} cassino`;
+  async remove(id: number) {
+    await this.findOne(id);
+    return await this.repository.remover(id);
   }
 }
