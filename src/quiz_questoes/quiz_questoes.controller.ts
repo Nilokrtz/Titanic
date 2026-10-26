@@ -18,22 +18,22 @@ export class QuizQuestoesController {
   @UseGuards(AutenticacaoGuard, RolesGuard)
   @Roles(tipo_perfil.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Cadastra uma nova questão' })
-  @ApiCreatedResponse({ description: 'Questão cadastrada com sucesso.' })
+  @ApiOperation({ summary: 'Cadastra um novo quiz' })
+  @ApiCreatedResponse({ description: 'Quiz cadastrado com sucesso.' })
   @ApiBadRequestResponse({ description: 'Dados inválidos.' })
   @ApiNotFoundResponse({ description: 'Sala de desafio não encontrada.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
-  create(@Body() createDto: CreateQuizQuestoesDto) {
-    return this.quizQuestoesService.create(createDto);
+  create(@Body() data: CreateQuizQuestoesDto) {
+    return this.quizQuestoesService.create(data);
   }
 
   @Get()
   @UseGuards(AutenticacaoGuard, RolesGuard)
   @Roles(tipo_perfil.ADMIN_PROFESSOR, tipo_perfil.MONITOR)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Lista questões com paginação e filtros' })
-  @ApiOkResponse({ description: 'Lista de questões. Com Redis, pode ficar em cache por até 30 segundos.' })
+  @ApiOperation({ summary: 'Lista quizzes com paginação e filtros' })
+  @ApiOkResponse({ description: 'Lista todos os quizzes' })
   @ApiBadRequestResponse({ description: 'Parâmetros de filtro ou paginação inválidos.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findAll(@Query() filtros: FindQuizQuestoesQueryDto) {
@@ -44,10 +44,10 @@ export class QuizQuestoesController {
   @UseGuards(AutenticacaoGuard, RolesGuard)
   @Roles(tipo_perfil.ADMIN_PROFESSOR, tipo_perfil.MONITOR)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Consulta os detalhes de uma questão pelo ID' })
-  @ApiParam({ name: 'id', type: Number, description: 'ID da questão' })
-  @ApiOkResponse({ description: 'Questão encontrada.' })
-  @ApiNotFoundResponse({ description: 'Questão não encontrada.' })
+  @ApiOperation({ summary: 'Consulta os detalhes de um quiz pelo ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID do quiz' })
+  @ApiOkResponse({ description: 'Quiz encontrado.' })
+  @ApiNotFoundResponse({ description: 'Quiz não encontrado.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.quizQuestoesService.findById(id);
@@ -57,25 +57,25 @@ export class QuizQuestoesController {
   @UseGuards(AutenticacaoGuard, RolesGuard)
   @Roles(tipo_perfil.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Atualiza dados de uma questão (Apenas Professores/Admins)' })
-  @ApiParam({ name: 'id', type: Number, description: 'ID da questão' })
-  @ApiOkResponse({ description: 'Questão atualizada com sucesso.' })
+  @ApiOperation({ summary: 'Atualiza dados de um quiz (Apenas Professores/Admins)' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID do quiz' })
+  @ApiOkResponse({ description: 'Quiz atualizado com sucesso.' })
   @ApiBadRequestResponse({ description: 'Dados inválidos.' })
-  @ApiNotFoundResponse({ description: 'Questão ou Sala não encontrada.' })
+  @ApiNotFoundResponse({ description: 'Quiz ou Sala não encontrados.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
-  update(@Param('id', ParseIntPipe) id: number,@Body() updateDto: UpdateQuizQuestoesDto) {
-    return this.quizQuestoesService.update(id, updateDto);
+  update(@Param('id', ParseIntPipe) id: number,@Body() data: UpdateQuizQuestoesDto) {
+    return this.quizQuestoesService.update(id, data);
   }
 
   @Delete(':id')
   @UseGuards(AutenticacaoGuard, RolesGuard)
   @Roles(tipo_perfil.ADMIN_PROFESSOR)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Remove uma questão (Apenas Professores/Admins)' })
-  @ApiParam({ name: 'id', type: Number, description: 'ID da questão' })
-  @ApiOkResponse({ description: 'Questão removida com sucesso.' })
-  @ApiNotFoundResponse({ description: 'Questão não encontrada.' })
+  @ApiOperation({ summary: 'Remove um quiz' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID do quiz' })
+  @ApiOkResponse({ description: 'Quiz removido com sucesso.' })
+  @ApiNotFoundResponse({ description: 'Quiz não encontrado.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
   remove(@Param('id', ParseIntPipe) id: number) {
@@ -85,14 +85,13 @@ export class QuizQuestoesController {
   @Get(':id/jogar')
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Obtém a questão formatada para o jogador (3 opções para especialista, 4 para normal)' })
+  @ApiOperation({ summary: 'Realzia a exlusao de uma opcao caso o usuário tenha proeficiencia na questão' })
   @ApiParam({ name: 'id', type: Number, description: 'ID da questão' })
-  @ApiOkResponse({ description: 'Questão formatada retornada com sucesso.' })
+  @ApiOkResponse({ description: 'Questão é excluida caso o usuário tenha proeficiencia na questão.' })
   @ApiNotFoundResponse({ description: 'Questão não encontrada.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   obterParaJogar(
-  @Param('id', ParseIntPipe) id: number,
-  @Query('especializacao') especializacao?: string) {
-    return this.quizQuestoesService.obterQuestaoFormatada(id, especializacao);
+  @Param('id', ParseIntPipe) id: number,@Query('especializacao') especializacao?: string) {
+    return this.quizQuestoesService.ExclusãoDeOpcaoBaseadoNaProeficiencia(id, especializacao);
   }
 }

@@ -34,13 +34,6 @@ export class SalasDesafioRepository {
     });
   }
 
-  async listarTodasAsSalas(){
-    return this.prisma.salas_desafio.findMany({
-      include:{ranks: true, disciplinas: true},
-      orderBy:{numero_sala: 'asc'}
-    });
-  }
-
   async buscarSalaPorId(id: number){
     return this.prisma.salas_desafio.findUnique({
       where:{id},
@@ -56,13 +49,13 @@ export class SalasDesafioRepository {
     });
   }
   async remover(id: number){
-    return this.prisma.salas_desafio.delete({
-      where:{id}
-    });
+    return this.prisma.salas_desafio.delete({where:{id}});
   }
 
   async listarComFiltrosEPaginacao(filtros: FindSalasQueryDto) {
-    const where: Prisma.salas_desafioWhereInput = {};
+    const where: Prisma.salas_desafioWhereInput = {
+      disciplina_id: 0
+    };
 
     if (filtros.nome) {
       where.nome = {

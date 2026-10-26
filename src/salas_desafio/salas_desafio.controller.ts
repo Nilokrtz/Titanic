@@ -23,16 +23,15 @@ export class SalasDesafioController {
   @ApiBadRequestResponse({ description: 'Dados inválidos ou número da sala já existente.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
-  create(@Body() createDto: CreateSalasDesafioDto,
-  ) {
-    return this.salasDesafioService.create(createDto);
+  create(@Body() data: CreateSalasDesafioDto) {
+    return this.salasDesafioService.create(data);
   }
 
   @Get()
   @UseGuards(AutenticacaoGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Lista todas as salas de desafio disponíveis' })
-  @ApiOkResponse({ description: 'Lista de salas. Com Redis, pode ficar em cache por até 30 segundos.' })
+  @ApiOkResponse({ description: 'Lista de salas' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findAll(@Query() filtros: FindSalasQueryDto) {
     return this.salasDesafioService.findAll(filtros);
@@ -43,7 +42,7 @@ export class SalasDesafioController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Consulta as informações de uma sala pelo ID da mesma' })
   @ApiParam({name: 'id', type: Number, description: 'ID da sala de desafio'})
-  @ApiOkResponse({ description: 'Sala de desafio encontrada. Com Redis, pode ficar em cache por até 30 segundos.' })
+  @ApiOkResponse({ description: 'Sala de desafio encontrada' })
   @ApiNotFoundResponse({ description: 'Sala de desafio não encontrada' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   findById(@Param('id', ParseIntPipe) id: number){
@@ -61,8 +60,8 @@ export class SalasDesafioController {
   @ApiNotFoundResponse({ description: 'Sala de desafio ou rank mínimo não encontrado.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'Acesso negado: Perfil sem permissão.' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateSalasDesafioDto) {
-    return this.salasDesafioService.update(id, updateDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() data: UpdateSalasDesafioDto) {
+    return this.salasDesafioService.update(id, data);
   }
 
   @Delete(':id')
