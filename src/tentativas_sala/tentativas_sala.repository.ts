@@ -149,4 +149,15 @@ export class TentativasSalaRepository {
   });
   return tentativa?.personagens;
   }
+
+  async buscarSalaPorTentativaId(tentativaId: number) {
+  const tentativa = await this.prisma.tentativas_sala.findUnique({
+    where: { id: tentativaId },
+    include: {
+      salas_desafio: {
+      },
+    },
+  });
+  return tentativa?.salas_desafio;
+  }
 }
