@@ -159,11 +159,17 @@ export class TentativasSalaService {
   }
 
   async verificaSeUsuarioEstaVivo(data: ResponderTentativaDto, dano: number){
-    let vidaAtual = data.vida_restante - dano;
-    const statusTentativa = data.tipo_status_tentativas as 'DERROTA' | 'EM_ANDAMENTO' | 'VITORIA';
-    
+    const tentativa = await this.repository.buscarPorId(data.id)
+    let vidaAtual = (tentativa?.vida_restante ?? 0) - dano;
+    let statusTentativa = tentativa?.status;
+
+    if(!statusTentativa){
+      throw new ForbiddenException('Status da tentativa não encontrada');
+    }
+
     if(vidaAtual <= 0){
-      data.tipo_status_tentativas = 'DERROTA' as 'DERROTA' | 'EM_ANDAMENTO' | 'VITORIA';
+      vidaAtual = 0;
+      statusTentativa = 'DERROTA'; 
       console.log({message: 'Acabou  sua vida, você morreu'});
     }
 
@@ -171,10 +177,10 @@ export class TentativasSalaService {
       vidaAtual = 100;
       console.log({message: 'Você atingiu a vida máxima, sua vida retornou a 100'});
     }
-    data.vida_restante = vidaAtual;
+
     return this.repository.atualizar(data.id,{
       vida_restante: vidaAtual,
-      status: (data.tipo_status_tentativas ?? statusTentativa) as 'DERROTA' | 'EM_ANDAMENTO' | 'VITORIA',
+      status: statusTentativa
     }); 
   }
 
