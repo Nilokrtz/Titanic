@@ -146,14 +146,14 @@ export class TentativasSalaService {
   }
     
   async checkSeUpou(xp: number){
-    if(xp >= 100 ){
-      return 2;
+    if(xp >= 300 ){
+      return 4;
     }
     if(xp >= 200 ){
       return 3;
     }
-    if(xp >= 300 ){
-      return 4;
+    if(xp >= 100 ){
+      return 2;
     }
     return 1;  
   }
@@ -179,7 +179,7 @@ export class TentativasSalaService {
   }
 
   async respostaUsuario(data: ResponderTentativaDto){
-    const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
+    const personagem = await this.repository.buscarPersonagemPorTentativaId(data.id);
 
     if (!personagem) {
       throw new NotFoundException('Personagem informado não foi encontrado.');
