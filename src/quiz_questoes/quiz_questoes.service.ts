@@ -55,7 +55,7 @@ export class QuizQuestoesService {
       throw new NotFoundException('Questão não encontrada.');
     }
 
-    if (!proeficienciaPersonagem) {
+    if (proeficienciaPersonagem !== questao.topico_atributo) {
       return questao;
     }
     else{

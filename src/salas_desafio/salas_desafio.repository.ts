@@ -28,9 +28,13 @@ export class SalasDesafioRepository {
   }
 
   async criar(data: CreateSalasDesafioDto) {
+    const { rank_minimo_id, disciplina_id, ...dados } = data;
     return this.prisma.salas_desafio.create({
-      data,
-      include: {ranks: true, disciplinas: true},
+      data: {
+        ...dados,
+        ...(rank_minimo_id ? { rank_minimo_id } : {}),
+        ...(disciplina_id ? { disciplina_id } : {}),
+      },
     });
   }
 

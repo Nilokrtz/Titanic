@@ -81,7 +81,7 @@ export class SalasDesafioService {
       throw new NotFoundException('Disciplina informada não foi encontrada.');
     }
 
-    if (!disciplina.ativo) {
+    if (disciplina.ativo === false) {
       throw new BadRequestException(
         'Não é possível vincular uma sala a uma disciplina inativa.',
       );
