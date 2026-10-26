@@ -114,7 +114,7 @@ export class TentativasSalaRepository {
 
   async deletarInventarioDoPersonagemId(personagemId: number) {
     return this.prisma.inventario_itens.deleteMany({
-      where: { id: personagemId },
+      where: { personagem_id: personagemId },
     });
   }
 

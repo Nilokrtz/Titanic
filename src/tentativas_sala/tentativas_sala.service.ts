@@ -1,6 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTentativasDto } from './dto/create-tentativas_sala.dto.js';
-import { DesistirTentativaDto } from './dto/desistir-tentativas.dto.js';
 import { FindTentativasQueryDto } from './dto/find-tentativas-query.dto.js';
 import { ResponderTentativaDto } from './dto/responder-tentativa.dto.js';
 import { TentativasSalaRepository } from './tentativas_sala.repository.js';
@@ -14,6 +13,7 @@ export class TentativasSalaService {
     if (data.sala_id == null || data.personagem_id == null || data.usuario_id == null || data.personagem_id < 1 || data.usuario_id < 1) {
       throw new BadRequestException('Os IDs da sala, do personagem e do usuário devem ser positivos.');
     }
+    return this.repository.criar(data);
   }
 
   async findAll(filtros: FindTentativasQueryDto) {
@@ -58,7 +58,7 @@ export class TentativasSalaService {
     return { mensagem: 'Tentativa de sala removida com sucesso.' };
   }
 
-  async CalcularDanoBaseadoNaEspecializacao(data: ResponderTentativaDto): Promise<Number> {
+  async CalcularDanoBaseadoNaEspecializacao(data: ResponderTentativaDto): Promise<number> {
     
     const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
     
@@ -70,8 +70,7 @@ export class TentativasSalaService {
     }
     
     const ranking = personagem?.rank_id;
-    
-    if(ranking == null || !ranking ){
+    if (ranking == null || !ranking) {
       throw new BadRequestException('O personagem não possui ranking definido.');
     }
 
@@ -99,42 +98,41 @@ export class TentativasSalaService {
   async LogicaJogo(data: ResponderTentativaDto){
     const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
     const sala = await this.repository.buscarSalaPorId(data.sala_id);
-    let id = data.questao_id;
     let xpAtual = Number(personagem?.xp_atual ?? 0);
     let moedas = Number(personagem?.moedas ?? 0);
     let ranking =  Number(personagem?.rank_id);
 
     const jaPassouNessaSala = await this.repository.verificarSeJaFezAFase(data.personagem_id, data.sala_id);
     if (jaPassouNessaSala) {
-      throw ('Esta sala já foi concluida');
+      throw new BadRequestException('Esta sala já foi concluida');
     }
 
     if (ranking < Number(sala?.rank_minimo_id)) {
-      throw ('Nível/Ranking insuficiente para acessar esta sala!');
-    }
-
-    if((sala?.chefe_nome)?.includes('Diego')) {
-      await this.repository.deletarInventarioDoPersonagemId(data.personagem_id);
-      console.log("O Boss deletou seus itens")
+      throw new ForbiddenException('Nível/Ranking insuficiente para acessar esta sala!');
     }
 
     if (data.tipo_status_tentativas === 'DERROTA') {
       if ((sala?.chefe_nome)?.includes('Diego')) {
         await this.repository.deletarInventarioDoPersonagemId(data.personagem_id);
-        throw('O Boss Diego derrotou você e destruiu seus itens!');
+        throw new BadRequestException('O Boss Diego derrotou você e destruiu seus itens!');
       }
 
-      return {message: 'Você foi derrotado'};
-    }
-    else if(data.tipo_status_tentativas === 'EM_ANDAMENTO'){
-      let dano = Number(this.CalcularDanoBaseadoNaEspecializacao(data));
-      this.verificaSeUsuarioEstaVivo(data, dano);
-      const Proximaquestao = await this.repository.buscarQuestaoPorId(id);  
-      id++;
-    }
-    else if(data.tipo_status_tentativas === 'VITORIA'){
-      xpAtual += Number(sala?.xp_recompensa);
-      moedas += Number(sala?.moedas_recompensa);
+      return { message: 'Você foi derrotado' };
+    } 
+    else if (data.tipo_status_tentativas === 'EM_ANDAMENTO') {
+      const dano = await this.CalcularDanoBaseadoNaEspecializacao(data);
+      await this.verificaSeUsuarioEstaVivo(data, dano);
+
+      return {
+        message: 'Resposta processada com sucesso',
+        dano_sofrido: dano,
+        vida_restante: data.vida_restante,
+        status: data.tipo_status_tentativas,
+      };
+    } 
+    else if (data.tipo_status_tentativas === 'VITORIA') {
+      xpAtual += Number(sala?.xp_recompensa ?? 0);
+      moedas += Number(sala?.moedas_recompensa ?? 0);
       ranking = await this.checkSeUpou(xpAtual);
       await this.repository.atualizarPersonagem(data.personagem_id, xpAtual, moedas, ranking);
       return {message: 'Parabéns você venceu a fase'}
@@ -159,9 +157,10 @@ export class TentativasSalaService {
 
   async verificaSeUsuarioEstaVivo(data: ResponderTentativaDto, dano: number){
     let vidaAtual = data.vida_restante - dano;
+    const statusTentativa = data.tipo_status_tentativas as 'DERROTA' | 'EM_ANDAMENTO' | 'VITORIA';
     
     if(vidaAtual <= 0){
-      data.tipo_status_tentativas = 'DERROTA'
+      data.tipo_status_tentativas = 'DERROTA' as 'DERROTA' | 'EM_ANDAMENTO' | 'VITORIA';
       console.log({message: 'Acabou  sua vida, você morreu'});
     }
 
@@ -170,7 +169,10 @@ export class TentativasSalaService {
       console.log({message: 'Você atingiu a vida máxima, sua vida retornou a 100'});
     }
     data.vida_restante = vidaAtual;
-    return this.repository.atualizar(data.id, data); 
+    return this.repository.atualizar(data.id,{
+      vida_restante: vidaAtual,
+      status: (data.tipo_status_tentativas ?? statusTentativa) as 'DERROTA' | 'EM_ANDAMENTO' | 'VITORIA',
+    }); 
   }
 
   async respostaUsuario(data: ResponderTentativaDto){
