@@ -61,6 +61,7 @@ export class TentativasSalaService {
   async CalcularDanoBaseadoNaEspecializacao(data: ResponderTentativaDto): Promise<number> {
     
     const personagem = await this.repository.buscarPersonagemPorTentativaId(data.id);
+    const sala = await this.repository.buscarSalaPorTentativaId(data.id);
     
     if (!personagem) {
       throw new NotFoundException('Personagem informado não foi encontrado.');
@@ -76,7 +77,7 @@ export class TentativasSalaService {
 
     const especilizacaoDoUsuario = await this.repository.buscarEspecializacaoPorId(personagem.especializacao_id);
     const questao = await this.repository.buscarQuestaoPorId(data.questao_id);
-    let dano = 5 * ranking;
+    let dano = (sala?.dano_base_erro ?? 5) * ranking;
 
     if (!questao) {
       throw new NotFoundException('Questão informada não foi encontrada.');
@@ -92,7 +93,6 @@ export class TentativasSalaService {
         console.log({message: 'Resposta errada, você recebeu uma penalidade de dobro de dano'});
     }
     else{
-        dano = 0
         console.log({message: 'Resposta errada, porém sem penalidade de dano.'});
     }
     return dano;
