@@ -106,6 +106,10 @@ export class TentativasSalaService {
     let moedas = Number(personagem?.moedas ?? 0);
     let ranking =  Number(personagem?.rank_id);
     
+    if (!tentativa) {
+      throw new NotFoundException('Tentativa não encontrada.');
+    }
+
     if (!sala) {
       throw new NotFoundException('Sala não encontrada.');
     }
@@ -133,13 +137,13 @@ export class TentativasSalaService {
     } 
     else if (tentativa?.status === 'EM_ANDAMENTO') {
       const dano = await this.CalcularDanoBaseadoNaEspecializacao(data);
-      await this.verificaSeUsuarioEstaVivo(data, dano);
+      const tentativaAtualizada = await this.verificaSeUsuarioEstaVivo(data, dano);
 
       return {
         message: 'Resposta processada com sucesso',
         dano_sofrido: dano,
-        vida_restante: tentativa.vida_restante,
-        status: tentativa?.status,
+        vida_restante: tentativaAtualizada.vida_restante,
+        status: tentativaAtualizada?.status,
       };
     } 
     else if (tentativa?.status === 'VITORIA') {
