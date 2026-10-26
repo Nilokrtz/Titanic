@@ -10,7 +10,7 @@ export class EventosController {
 
   @EventPattern('usuario_registado') 
   async processarBoasVindas(@Payload() data: { usuarioId: number; email: string }) {
-    this.logger.log(`📥 [RabbitMQ] Evento recebido para o email: ${data.email}`);
+    this.logger.log(`Evento recebido`);
 
     try {
       await this.emailService.enviarBoasVindas(data.email);

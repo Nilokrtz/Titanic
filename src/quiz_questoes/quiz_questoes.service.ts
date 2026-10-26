@@ -61,13 +61,18 @@ export class QuizQuestoesService {
     else{
       const opcoes = ['A', 'B', 'C', 'D']
       const opcaoCerta = questao.resposta_correta;
-      let indiceRandomizado: number = Math.floor(Math.random() * opcoes.length);
+      let indiceRandomizado: number;
       do{
         indiceRandomizado = Math.floor(Math.random() * opcoes.length);
         console.log('repetiu aqui');
       }while(opcoes[indiceRandomizado] === opcaoCerta)  
 
-      return opcoes.filter(opcao => opcao !== opcoes[indiceRandomizado]);
+      const opcoesEmbaralhadas = opcoes.filter(opcao => opcao !== opcoes[indiceRandomizado]);
+
+      return{
+        ...questao,
+        opcoesEmbaralhadas
+      }
     }
   }
 }

@@ -5,6 +5,7 @@ import { PrismaClient } from '../generated/prisma/client.js';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleDestroy {
+  disciplinas: any;
   constructor() {
     const urlBanco = process.env.DATABASE_URL;
 

@@ -53,9 +53,7 @@ export class SalasDesafioRepository {
   }
 
   async listarComFiltrosEPaginacao(filtros: FindSalasQueryDto) {
-    const where: Prisma.salas_desafioWhereInput = {
-      disciplina_id: 0
-    };
+    const where: Prisma.salas_desafioWhereInput = {};
 
     if (filtros.nome) {
       where.nome = {

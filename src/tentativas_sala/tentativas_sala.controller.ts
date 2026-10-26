@@ -1,13 +1,11 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { tipo_perfil } from '../generated/prisma/enums.js';
 import { CreateTentativasDto } from './dto/create-tentativas_sala.dto.js';
 import { UpdateTentativasDto } from './dto/update-tentativas_sala.dto.js';
-import { DesistirTentativaDto } from './dto/desistir-tentativas.dto.js';
 import { FindTentativasQueryDto } from './dto/find-tentativas-query.dto.js';
 import { ResponderTentativaDto } from './dto/responder-tentativa.dto.js';
 import { TentativasSalaService } from './tentativas_sala.service.js';
@@ -27,7 +25,7 @@ export class TentativasSalaController {
   @ApiNotFoundResponse({ description: 'Personagem ou Sala de desafio não encontrada.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'O personagem não pertence ao usuário autenticado.' })
-  create(@Body('sala_id', ParseIntPipe) @Body() data: CreateTentativasDto) {
+  create(@Body() data: CreateTentativasDto) {
     return this.tentativasSalaService.create(data);
   }
 
