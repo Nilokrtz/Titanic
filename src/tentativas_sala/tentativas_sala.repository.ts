@@ -138,4 +138,15 @@ export class TentativasSalaRepository {
       },
     });
   }
+
+  async buscarPersonagemPorTentativaId(tentativaId: number) {
+  const tentativa = await this.prisma.tentativas_sala.findUnique({
+    where: { id: tentativaId },
+    include: {
+      personagens: {
+      },
+    },
+  });
+  return tentativa?.personagens;
+  }
 }

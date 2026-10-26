@@ -19,7 +19,7 @@ export class TentativasSalaService {
   async findAll(filtros: FindTentativasQueryDto) {
     return this.repository.listarComFiltrosEPaginacao(filtros);
   }
-
+  
   async findById(id: number) {
     const tentativa = await this.repository.buscarPorId(id);
     if (!tentativa) {
@@ -60,7 +60,7 @@ export class TentativasSalaService {
 
   async CalcularDanoBaseadoNaEspecializacao(data: ResponderTentativaDto): Promise<number> {
     
-    const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
+    const personagem = await this.repository.buscarPersonagemPorTentativaId(data.id);
     
     if (!personagem) {
       throw new NotFoundException('Personagem informado não foi encontrado.');
@@ -82,15 +82,18 @@ export class TentativasSalaService {
       throw new NotFoundException('Questão informada não foi encontrada.');
     }
     
+    if(data.alternativa_escolhida === questao.resposta_correta){
+      console.log({ message: 'Resposta certa' });
+      return 0;
+    }
+
     if(especilizacaoDoUsuario?.atributo_penalidade === questao.topico_atributo){
-      if(data.alternativa_escolhida !== questao.resposta_correta){
         dano = dano * 2;
-        throw {message: 'Resposta errada, você recebeu uma penalidade de dobro de dano'};
-      }
-      else{
+        console.log({message: 'Resposta errada, você recebeu uma penalidade de dobro de dano'});
+    }
+    else{
         dano = 0
-        throw {message: 'Resposta correta, sem penalidade de dano.'};
-      }
+        console.log({message: 'Resposta errada, porém sem penalidade de dano.'});
     }
     return dano;
   }
