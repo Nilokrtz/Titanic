@@ -4,6 +4,7 @@ import { FindTentativasQueryDto } from './dto/find-tentativas-query.dto.js';
 import { ResponderTentativaDto } from './dto/responder-tentativa.dto.js';
 import { TentativasSalaRepository } from './tentativas_sala.repository.js';
 import { UpdateTentativasDto } from './dto/update-tentativas_sala.dto.js';
+import type { personagens, salas_desafio } from '../generated/prisma/client.js';
 
 @Injectable()
 export class TentativasSalaService {
@@ -36,8 +37,14 @@ export class TentativasSalaService {
       throw new BadRequestException('Esta sala já foi concluida');
     }
 
+    const primeiraQuestao = await this.repository.buscarProximaQuestao(sala.id);
+    if (!primeiraQuestao) {
+      throw new BadRequestException('Essa sala ainda não tem questões.');
+    }
+
     return this.repository.criar({
       ...data,
+      questao_atual_id: primeiraQuestao.id,
       vida_restante: 100,
       status: 'EM_ANDAMENTO',
       acertos: 0,
@@ -135,9 +142,7 @@ export class TentativasSalaService {
     const personagem = await this.repository.buscarPersonagemPorTentativaId(data.id);
     const sala = await this.repository.buscarSalaPorTentativaId(data.id);
     const tentativa = await this.repository.buscarPorId(data.id);
-    let xpAtual = Number(personagem?.xp_atual ?? 0);
-    let moedas = Number(personagem?.moedas ?? 0);
-    let ranking =  Number(personagem?.rank_id);
+    const ranking =  Number(personagem?.rank_id);
     
     if (!tentativa) {
       throw new NotFoundException('Tentativa não encontrada.');
@@ -169,8 +174,22 @@ export class TentativasSalaService {
       return { message: 'Você foi derrotado' };
     } 
     else if (tentativa?.status === 'EM_ANDAMENTO') {
+      if (tentativa.questao_atual_id && data.questao_id !== tentativa.questao_atual_id) {
+        throw new BadRequestException('Responda a questão atual da tentativa.');
+      }
+
       const dano = await this.CalcularDanoBaseadoNaEspecializacao(data);
       const tentativaAtualizada = await this.verificaSeUsuarioEstaVivo(data, dano);
+
+      if (tentativaAtualizada.status === 'VITORIA') {
+        await this.darRecompensa(personagem, sala, tentativa.id);
+        return {
+          message: 'Parabéns você venceu a fase',
+          dano_sofrido: dano,
+          vida_restante: tentativaAtualizada.vida_restante,
+          status: tentativaAtualizada.status,
+        };
+      }
 
       return {
         message: 'Resposta processada com sucesso',
@@ -183,16 +202,20 @@ export class TentativasSalaService {
       if (tentativa.finalizado_em) {
         throw new BadRequestException('Esta sala já foi concluida');
       }
-      xpAtual += Number(sala?.xp_recompensa ?? 0);
-      moedas += Number(sala?.moedas_recompensa ?? 0);
-      ranking = await this.checkSeUpou(xpAtual);
-      await this.repository.atualizarPersonagem(personagem.id, xpAtual, moedas, ranking);
-      await this.repository.finalizarTentativa(tentativa.id);
+      await this.darRecompensa(personagem, sala, tentativa.id);
       return {message: 'Parabéns você venceu a fase'}
     }
     else{
       return {message: 'Status tentativas incorreto'}
     }
+  }
+
+  async darRecompensa(personagem: personagens, sala: salas_desafio, tentativaId: number) {
+    const xpAtual = Number(personagem.xp_atual ?? 0) + sala.xp_recompensa;
+    const moedas = Number(personagem.moedas ?? 0) + sala.moedas_recompensa;
+    const ranking = await this.checkSeUpou(xpAtual);
+    await this.repository.atualizarPersonagem(personagem.id, xpAtual, moedas, ranking);
+    await this.repository.finalizarTentativa(tentativaId);
   }
     
   async checkSeUpou(xp: number){
@@ -212,6 +235,7 @@ export class TentativasSalaService {
     const tentativa = await this.repository.buscarPorId(data.id)
     let vidaAtual = (tentativa?.vida_restante ?? 0) - dano;
     let statusTentativa = tentativa?.status;
+    let questaoAtualId = tentativa?.questao_atual_id;
 
     if(!statusTentativa){
       throw new ForbiddenException('Status da tentativa não encontrada');
@@ -222,6 +246,15 @@ export class TentativasSalaService {
       statusTentativa = 'DERROTA'; 
       console.log({message: 'Acabou  sua vida, você morreu'});
     }
+    else if(dano === 0){
+      const proximaQuestao = await this.repository.buscarProximaQuestao(Number(tentativa?.sala_id), data.questao_id);
+      if(proximaQuestao){
+        questaoAtualId = proximaQuestao.id;
+      }
+      else{
+        statusTentativa = 'VITORIA';
+      }
+    }
 
     if(vidaAtual > 100){
       vidaAtual = 100;
@@ -231,6 +264,7 @@ export class TentativasSalaService {
     return this.repository.atualizar(data.id,{
       vida_restante: vidaAtual,
       status: statusTentativa,
+      questao_atual_id: questaoAtualId ?? undefined,
       acertos: (tentativa?.acertos ?? 0) + (dano > 0 ? 0 : 1),
       erros: (tentativa?.erros ?? 0) + (dano > 0 ? 1 : 0),
     }); 

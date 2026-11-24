@@ -129,6 +129,13 @@ export class TentativasSalaRepository {
     });
   }
 
+  async buscarProximaQuestao(salaId: number, depoisDaQuestaoId = 0) {
+    return this.prisma.quiz_questoes.findFirst({
+      where: { sala_id: salaId, id: { gt: depoisDaQuestaoId } },
+      orderBy: { id: 'asc' },
+    });
+  }
+
   async finalizarTentativa(tentativaId: number) {
     return this.prisma.tentativas_sala.update({
       where: { id: tentativaId },
