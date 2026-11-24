@@ -33,7 +33,7 @@ export class TentativasSalaRepository {
         sala_id: data.sala_id,
         personagem_id: data.personagem_id,
         questao_atual_id: data.questao_atual_id,
-        vida_restante: data.vida_restante,
+        vida_restante: data.vida_restante ?? 100,
         status: data.status ?? 'EM_ANDAMENTO',
         acertos: data.acertos ?? 0,
         erros: data.erros ?? 0,

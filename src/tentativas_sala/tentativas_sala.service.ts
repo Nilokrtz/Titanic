@@ -38,7 +38,7 @@ export class TentativasSalaService {
 
     return this.repository.criar({
       ...data,
-      vida_restante: Math.min(data.vida_restante, 100),
+      vida_restante: 100,
       status: 'EM_ANDAMENTO',
       acertos: 0,
       erros: 0,
