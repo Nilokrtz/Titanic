@@ -1,5 +1,6 @@
-import { Controller, Post,Get, Body, UseGuards, Query, ParseIntPipe, Param, Patch, Delete } from '@nestjs/common';
+import { Controller, Post,Get, Body, UseGuards, Query, ParseIntPipe, Param, Patch, Delete, Req } from '@nestjs/common';
 import {ApiBadRequestResponse,ApiBearerAuth,ApiCreatedResponse,ApiForbiddenResponse,ApiNotFoundResponse,ApiOperation,ApiTags,ApiUnauthorizedResponse, ApiOkResponse, ApiParam} from '@nestjs/swagger';
+import type { Request } from 'express';
 import { tipo_perfil } from '../generated/prisma/client.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -91,7 +92,7 @@ export class QuizQuestoesController {
   @ApiNotFoundResponse({ description: 'Questão não encontrada.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   obterParaJogar(
-  @Param('id', ParseIntPipe) id: number,@Query('especializacao') especializacao?: string) {
-    return this.quizQuestoesService.ExclusãoDeOpcaoBaseadoNaProeficiencia(id, especializacao);
+  @Param('id', ParseIntPipe) id: number, @Req() requisicao: Request & { usuarioId: number }) {
+    return this.quizQuestoesService.ExclusãoDeOpcaoBaseadoNaProeficiencia(id, requisicao.usuarioId);
   }
 }

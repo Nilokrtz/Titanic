@@ -14,8 +14,9 @@ export class QuizQuestoesRepository {
   }
 
   async criar(data: CreateQuizQuestoesDto) {
+    const { topico_questao, ...dados } = data;
     return this.prisma.quiz_questoes.create({
-      data: { ...data, topico_atributo: data.topico_questao },
+      data: { ...dados, topico_atributo: topico_questao },
       include: { salas_desafio: true }
     });
   }
@@ -69,9 +70,10 @@ export class QuizQuestoesRepository {
   }
 
   async atualizar(id: number, data: UpdateQuizQuestoesDto) {
+    const { topico_questao, ...dados } = data;
     return this.prisma.quiz_questoes.update({
       where: { id },
-      data,
+      data: { ...dados, topico_atributo: topico_questao },
       include: {salas_desafio: true},
     });
   }
@@ -85,6 +87,13 @@ export class QuizQuestoesRepository {
   async buscarQuestaoPorId(questaoId: number) {
     return this.prisma.quiz_questoes.findUnique({
       where: { id: questaoId },
+    });
+  }
+
+  async buscarPersonagemPorUsuarioId(usuarioId: number) {
+    return this.prisma.personagens.findUnique({
+      where: { usuario_id: usuarioId },
+      include: { especializacoes: true },
     });
   }
 }

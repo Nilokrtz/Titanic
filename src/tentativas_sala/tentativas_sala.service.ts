@@ -9,11 +9,40 @@ import { UpdateTentativasDto } from './dto/update-tentativas_sala.dto.js';
 export class TentativasSalaService {
   constructor(private readonly repository: TentativasSalaRepository) {}
 
-  async create(data : CreateTentativasDto) {
-    if (data.sala_id == null || data.personagem_id == null || data.usuario_id == null || data.personagem_id < 1 || data.usuario_id < 1) {
-      throw new BadRequestException('Os IDs da sala, do personagem e do usuário devem ser positivos.');
+  async create(data : CreateTentativasDto, usuarioId: number) {
+    if (data.sala_id == null || data.personagem_id == null) {
+      throw new BadRequestException('Os IDs da sala e do personagem devem ser informados.');
     }
-    return this.repository.criar(data);
+
+    const personagem = await this.repository.buscarPersonagemPorId(data.personagem_id);
+    if (!personagem) {
+      throw new NotFoundException('Personagem informado não foi encontrado.');
+    }
+    if (personagem.usuario_id !== usuarioId) {
+      throw new ForbiddenException('Esse personagem não pertence a você.');
+    }
+
+    const sala = await this.repository.buscarSalaPorId(data.sala_id);
+    if (!sala) {
+      throw new NotFoundException('Sala de desafio informada não foi encontrada.');
+    }
+
+    if (Number(personagem.rank_id ?? 0) < Number(sala.rank_minimo_id ?? 0)) {
+      throw new BadRequestException('Nível/Ranking insuficiente para acessar esta sala!');
+    }
+
+    const jaPassouNessaSala = await this.repository.verificarSeJaFezAFase(personagem.id, sala.id);
+    if (jaPassouNessaSala) {
+      throw new BadRequestException('Esta sala já foi concluida');
+    }
+
+    return this.repository.criar({
+      ...data,
+      vida_restante: Math.min(data.vida_restante, 100),
+      status: 'EM_ANDAMENTO',
+      acertos: 0,
+      erros: 0,
+    });
   }
 
   async findAll(filtros: FindTentativasQueryDto) {
@@ -77,10 +106,14 @@ export class TentativasSalaService {
 
     const especilizacaoDoUsuario = await this.repository.buscarEspecializacaoPorId(personagem.especializacao_id);
     const questao = await this.repository.buscarQuestaoPorId(data.questao_id);
-    let dano = (sala?.dano_base_erro ?? 5) * ranking;
+    let dano = (sala?.dano_base_erro || 5) * ranking;
 
     if (!questao) {
       throw new NotFoundException('Questão informada não foi encontrada.');
+    }
+    
+    if (questao.sala_id !== sala?.id) {
+      throw new BadRequestException('Essa questão não pertence à sala da tentativa.');
     }
     
     if(data.alternativa_escolhida === questao.resposta_correta){
@@ -118,7 +151,7 @@ export class TentativasSalaService {
       throw new NotFoundException('Personagem não encontrado.');
     }
 
-    const jaPassouNessaSala = await this.repository.verificarSeJaFezAFase(personagem.id, sala.id);
+    const jaPassouNessaSala = await this.repository.verificarSeJaFezAFase(personagem.id, sala.id, tentativa.id);
     if (jaPassouNessaSala) {
       throw new BadRequestException('Esta sala já foi concluida');
     }
@@ -147,10 +180,14 @@ export class TentativasSalaService {
       };
     } 
     else if (tentativa?.status === 'VITORIA') {
+      if (tentativa.finalizado_em) {
+        throw new BadRequestException('Esta sala já foi concluida');
+      }
       xpAtual += Number(sala?.xp_recompensa ?? 0);
       moedas += Number(sala?.moedas_recompensa ?? 0);
       ranking = await this.checkSeUpou(xpAtual);
       await this.repository.atualizarPersonagem(personagem.id, xpAtual, moedas, ranking);
+      await this.repository.finalizarTentativa(tentativa.id);
       return {message: 'Parabéns você venceu a fase'}
     }
     else{
@@ -193,15 +230,21 @@ export class TentativasSalaService {
 
     return this.repository.atualizar(data.id,{
       vida_restante: vidaAtual,
-      status: statusTentativa
+      status: statusTentativa,
+      acertos: (tentativa?.acertos ?? 0) + (dano > 0 ? 0 : 1),
+      erros: (tentativa?.erros ?? 0) + (dano > 0 ? 1 : 0),
     }); 
   }
 
-  async respostaUsuario(data: ResponderTentativaDto){
+  async respostaUsuario(data: ResponderTentativaDto, usuarioId: number){
     const personagem = await this.repository.buscarPersonagemPorTentativaId(data.id);
 
     if (!personagem) {
       throw new NotFoundException('Personagem informado não foi encontrado.');
+    }
+
+    if (personagem.usuario_id !== usuarioId) {
+      throw new ForbiddenException('Essa tentativa não pertence a você.');
     }
 
     return this.LogicaJogo(data);

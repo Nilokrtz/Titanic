@@ -49,28 +49,33 @@ export class QuizQuestoesService {
     return { mensagem: 'Quiz removido com sucesso.' };
   }
 
-  async ExclusãoDeOpcaoBaseadoNaProeficiencia(questaoId: number, proeficienciaPersonagem?: string) {
+  async ExclusãoDeOpcaoBaseadoNaProeficiencia(questaoId: number, usuarioId: number) {
     const questao = await this.repository.buscarQuestaoPorId(questaoId);
     if (!questao) {
       throw new NotFoundException('Questão não encontrada.');
     }
 
-    if (proeficienciaPersonagem !== questao.topico_atributo) {
-      return questao;
+    const personagem = await this.repository.buscarPersonagemPorUsuarioId(usuarioId);
+    const { resposta_correta, ...questaoSemResposta } = questao;
+
+    if (personagem?.especializacoes?.atributo_foco !== questao.topico_atributo) {
+      return questaoSemResposta;
     }
     else{
       const opcoes = ['A', 'B', 'C', 'D']
-      const opcaoCerta = questao.resposta_correta;
+      const opcaoCerta = resposta_correta;
       let indiceRandomizado: number;
       do{
         indiceRandomizado = Math.floor(Math.random() * opcoes.length);
         console.log('repetiu aqui');
       }while(opcoes[indiceRandomizado] === opcaoCerta)  
 
-      const opcoesEmbaralhadas = opcoes.filter(opcao => opcao !== opcoes[indiceRandomizado]);
+      const opcaoRemovida = opcoes[indiceRandomizado];
+      const opcoesEmbaralhadas = opcoes.filter(opcao => opcao !== opcaoRemovida);
 
       return{
-        ...questao,
+        ...questaoSemResposta,
+        [`opcao_${opcaoRemovida.toLowerCase()}`]: undefined,
         opcoesEmbaralhadas
       }
     }

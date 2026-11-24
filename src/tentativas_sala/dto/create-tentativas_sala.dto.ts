@@ -15,12 +15,6 @@ export class CreateTentativasDto {
   @Min(1)
   personagem_id?: number;
 
-  @ApiPropertyOptional({ description: 'ID do personagem que realiza a tentativa', example: 1 })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  usuario_id?: number;
-
   @ApiPropertyOptional({ description: 'ID da questão atual do quiz', example: 1 })
   @IsOptional()
   @IsInt()

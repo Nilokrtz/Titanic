@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { AutenticacaoGuard } from '../auth/guards/autenticacao.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
@@ -25,8 +26,8 @@ export class TentativasSalaController {
   @ApiNotFoundResponse({ description: 'Personagem ou Sala de desafio não encontrada.' })
   @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
   @ApiForbiddenResponse({ description: 'O personagem não pertence ao usuário autenticado.' })
-  create(@Body() data: CreateTentativasDto) {
-    return this.tentativasSalaService.create(data);
+  create(@Body() data: CreateTentativasDto, @Req() requisicao: Request & { usuarioId: number }) {
+    return this.tentativasSalaService.create(data, requisicao.usuarioId);
   }
 
   @Get()
@@ -88,7 +89,7 @@ export class TentativasSalaController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Usuário manda uma resposta' })
   @ApiCreatedResponse({ description: 'Resposta enviada com sucesso.' })
-  responder( @Body() dto: ResponderTentativaDto) {
-    return this.tentativasSalaService.respostaUsuario(dto);
+  responder( @Body() dto: ResponderTentativaDto, @Req() requisicao: Request & { usuarioId: number }) {
+    return this.tentativasSalaService.respostaUsuario(dto, requisicao.usuarioId);
   }
 }

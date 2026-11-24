@@ -46,15 +46,15 @@ export class TentativasSalaRepository {
   async listarComFiltrosEPaginacao(filtros: FindTentativasQueryDto) {
     const where: Prisma.tentativas_salaWhereInput = {};
 
-    if (!filtros.personagem_id) {
+    if (filtros.personagem_id) {
       where.personagem_id = filtros.personagem_id;
     }
 
-    if (!filtros.sala_id) {
+    if (filtros.sala_id) {
       where.sala_id = filtros.sala_id;
     }
 
-    if (!filtros.status) {
+    if (filtros.status) {
       where.status = filtros.status;
     }
 
@@ -118,13 +118,21 @@ export class TentativasSalaRepository {
     });
   }
 
-  async verificarSeJaFezAFase(personagemId: number, salaId: number){
+  async verificarSeJaFezAFase(personagemId: number, salaId: number, tentativaAtualId?: number){
     return await this.prisma.tentativas_sala.findFirst({
       where: {
         personagem_id: personagemId,
         sala_id: salaId,
         status: 'VITORIA',
+        ...(tentativaAtualId ? { id: { not: tentativaAtualId } } : {}),
       },
+    });
+  }
+
+  async finalizarTentativa(tentativaId: number) {
+    return this.prisma.tentativas_sala.update({
+      where: { id: tentativaId },
+      data: { finalizado_em: new Date() },
     });
   }
 
